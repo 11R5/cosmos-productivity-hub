@@ -6,6 +6,13 @@ yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
 
+
+node_modules/
+dist/
+*.log
+.DS_Store
+Thumbs.db
+
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
