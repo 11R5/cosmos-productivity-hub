@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'" />
   <title>Cosmos — Alışkanlık & Proje Üssü</title>
   <link rel="stylesheet" href="vendor/fonts/fonts.css" />
   <link rel="stylesheet" href="vendor/tailwind.css" />
@@ -22,6 +23,27 @@
       color: #e2e8f0;
       overflow-x: hidden;
       user-select: none;
+    }
+
+    input, textarea, select {
+      user-select: text;
+    }
+
+    .input-error {
+      border-color: #f43f5e !important;
+      box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.25);
+    }
+
+    #toastContainer > div {
+      animation: toast-in 0.2s ease-out;
+    }
+    @keyframes toast-in {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .chart-3d-inner, .kanban-card, .heat-cell { transition: none; }
     }
 
     h1, h2, h3, .font-space {
@@ -692,14 +714,40 @@
   </div>
 
   <!-- ========================================================================= -->
+  <!-- MODAL 5: IN-APP ALERT / CONFIRM DIALOG                                    -->
+  <!-- Native alert()/confirm() leave text inputs unresponsive in Electron on    -->
+  <!-- Windows, so every message goes through this dialog or a toast instead.    -->
+  <!-- ========================================================================= -->
+  <div id="appDialog" class="fixed inset-0 bg-black/75 hidden items-center justify-center z-[60] p-4">
+    <div class="space-card rounded-2xl max-w-sm w-full p-6 space-y-5 border border-indigo-500/40">
+      <p id="appDialogMessage" class="text-sm text-slate-200 leading-relaxed whitespace-pre-line"></p>
+      <div class="flex justify-end gap-2">
+        <button type="button" id="appDialogCancel" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold">Vazgeç</button>
+        <button type="button" id="appDialogOk" class="px-5 py-2 rounded-xl text-white text-xs font-bold">Tamam</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast notifications -->
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-[70] flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- ========================================================================= -->
   <!-- APPLICATION LOGIC                                                         -->
   <!-- ========================================================================= -->
   <script>
     // --- STARFIELD ANIMATION ---
-    (function initStarfield() {
+    // Every glass panel uses backdrop-filter, so each canvas frame forces the GPU to
+    // re-blur them. The twinkle is slow, so ~24 fps is plenty, and the animation
+    // pauses while a modal is open, the window is hidden or reduced motion is on.
+    const starfield = (function initStarfield() {
       const canvas = document.getElementById('starfield');
       const ctx = canvas.getContext('2d');
+      const FRAME_MS = 1000 / 24;
+      const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
       let stars = [];
+      let paused = false;
+      let rafId = null;
+      let lastFrame = 0;
       function resize() {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
@@ -711,22 +759,152 @@
           speed: (Math.random() * 0.015 + 0.004) * (Math.random() < 0.5 ? 1 : -1)
         }));
       }
-      window.addEventListener('resize', resize);
-      resize();
-      function animate() {
+      function draw(step) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         for (const s of stars) {
-          s.alpha += s.speed;
+          s.alpha += s.speed * step;
           if (s.alpha > 1 || s.alpha < 0.15) s.speed = -s.speed;
           ctx.beginPath();
           ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
           ctx.fillStyle = `rgba(226, 232, 240, ${Math.max(0.1, Math.min(1, s.alpha))})`;
           ctx.fill();
         }
-        requestAnimationFrame(animate);
       }
-      animate();
+      function frame(now) {
+        rafId = null;
+        if (paused || document.hidden || reducedMotion.matches) return;
+        if (now - lastFrame >= FRAME_MS) {
+          // step keeps the twinkle speed the same as the original 60 fps loop
+          draw(lastFrame ? Math.min((now - lastFrame) / (1000 / 60), 4) : 1);
+          lastFrame = now;
+        }
+        rafId = requestAnimationFrame(frame);
+      }
+      function start() {
+        if (rafId === null && !paused && !document.hidden && !reducedMotion.matches) {
+          lastFrame = 0;
+          rafId = requestAnimationFrame(frame);
+        }
+      }
+      window.addEventListener('resize', () => { resize(); draw(0); });
+      document.addEventListener('visibilitychange', start);
+      reducedMotion.addEventListener('change', start);
+      resize();
+      draw(0);
+      start();
+      return {
+        setPaused(p) { paused = p; if (!p) start(); }
+      };
     })();
+
+    // --- SAFE HTML ---
+    // User text (names, titles, tags…) is inserted with innerHTML, so it must be escaped.
+    function esc(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    const HEX_RE = /^#[0-9A-Fa-f]{6}$/;
+    function safeColor(value, fallback) {
+      return typeof value === 'string' && HEX_RE.test(value) ? value.toUpperCase() : fallback;
+    }
+
+    // --- MODALS, DIALOGS & TOASTS ---
+    const openModals = [];
+
+    function openModal(id, focusId) {
+      const el = document.getElementById(id);
+      el.classList.remove('hidden');
+      el.classList.add('flex');
+      if (!openModals.includes(id)) openModals.push(id);
+      starfield.setPaused(true);
+      if (focusId) setTimeout(() => document.getElementById(focusId)?.focus(), 30);
+    }
+
+    function closeModal(id) {
+      const el = document.getElementById(id);
+      el.classList.add('hidden');
+      el.classList.remove('flex');
+      const i = openModals.indexOf(id);
+      if (i !== -1) openModals.splice(i, 1);
+      if (openModals.length === 0) starfield.setPaused(false);
+    }
+
+    let dialogResolve = null;
+
+    // Promise-based replacement for alert()/confirm().
+    function showDialog(message, { confirm = false, okText = 'Tamam', danger = false } = {}) {
+      if (dialogResolve) dialogResolve(false);
+      document.getElementById('appDialogMessage').textContent = message;
+      const ok = document.getElementById('appDialogOk');
+      ok.textContent = okText;
+      ok.className = `px-5 py-2 rounded-xl text-white text-xs font-bold ${danger ? 'bg-rose-600 hover:bg-rose-500' : 'bg-indigo-600 hover:bg-indigo-500'}`;
+      document.getElementById('appDialogCancel').classList.toggle('hidden', !confirm);
+      openModal('appDialog', 'appDialogOk');
+      return new Promise(resolve => { dialogResolve = resolve; });
+    }
+
+    function finishDialog(result) {
+      closeModal('appDialog');
+      const resolve = dialogResolve;
+      dialogResolve = null;
+      if (resolve) resolve(result);
+    }
+
+    const uiConfirm = (message, okText = 'Sil') => showDialog(message, { confirm: true, okText, danger: true });
+
+    function showToast(message, type = 'info') {
+      const colors = {
+        info: 'border-cyan-500/40 text-cyan-200',
+        success: 'border-emerald-500/40 text-emerald-200',
+        error: 'border-rose-500/50 text-rose-200'
+      };
+      const el = document.createElement('div');
+      el.className = `px-4 py-2.5 rounded-xl bg-slate-900/95 border text-xs font-semibold shadow-xl ${colors[type] || colors.info}`;
+      el.textContent = message;
+      document.getElementById('toastContainer').appendChild(el);
+      setTimeout(() => el.remove(), 3200);
+    }
+
+    // Highlights a required field instead of interrupting with a dialog.
+    function flagInvalid(inputId, message) {
+      const input = document.getElementById(inputId);
+      input.classList.add('input-error');
+      input.focus();
+      input.addEventListener('input', () => input.classList.remove('input-error'), { once: true });
+      showToast(message, 'error');
+    }
+
+    document.getElementById('appDialogOk').addEventListener('click', () => finishDialog(true));
+    document.getElementById('appDialogCancel').addEventListener('click', () => finishDialog(false));
+
+    const MODAL_CLOSERS = {
+      appDialog: () => finishDialog(false),
+      habitModal: () => closeHabitModal(),
+      categoryModal: () => closeCategoryModal(),
+      projectModal: () => closeProjectModal(),
+      kanbanCardModal: () => closeKanbanCardModal()
+    };
+
+    // Enter submits single-line fields; Escape closes the top-most modal.
+    const ENTER_ACTIONS = {
+      habitNameInput: () => saveHabit(),
+      newCategoryName: () => addCategory(),
+      newProjectName: () => saveNewProject(),
+      cardTitleInput: () => saveKanbanCard(),
+      newTagInput: () => addTagToCardModal()
+    };
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && openModals.length > 0) {
+        e.preventDefault();
+        MODAL_CLOSERS[openModals[openModals.length - 1]]();
+      } else if (e.key === 'Enter' && !e.isComposing && ENTER_ACTIONS[e.target.id]) {
+        e.preventDefault();
+        ENTER_ACTIONS[e.target.id]();
+      }
+    });
 
     // --- CONSTANTS & PRESETS ---
     const DAY_NAMES = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
@@ -905,10 +1083,85 @@
       };
     }
 
-    let state = loadOrMigrateState();
+    // Repairs missing or malformed fields so a partial backup or an older data
+    // version can never leave the app half-rendered.
+    function normalizeState(raw) {
+      const s = raw && typeof raw === 'object' ? raw : {};
+      const categories = Array.isArray(s.categories)
+        ? [...new Set(s.categories.filter(c => typeof c === 'string' && c.trim()).map(c => c.trim()))]
+        : [];
+      if (categories.length === 0) categories.push(...DEFAULT_CATEGORIES);
+
+      const habits = (Array.isArray(s.habits) ? s.habits : [])
+        .filter(h => h && typeof h === 'object')
+        .map((h, i) => {
+          const days = Array.isArray(h.scheduledDays)
+            ? [...new Set(h.scheduledDays.filter(d => Number.isInteger(d) && d >= 0 && d <= 6))].sort((a, b) => a - b)
+            : [];
+          const history = {};
+          if (h.history && typeof h.history === 'object') {
+            Object.keys(h.history).forEach(k => {
+              if (/^\d{4}-\d{2}-\d{2}$/.test(k) && h.history[k]) history[k] = true;
+            });
+          }
+          const category = typeof h.category === 'string' && h.category.trim() ? h.category.trim() : categories[0];
+          if (!categories.includes(category)) categories.push(category);
+          return {
+            ...h,
+            id: h.id ?? Date.now() + i,
+            name: typeof h.name === 'string' && h.name.trim() ? h.name : 'Alışkanlık',
+            category,
+            color: safeColor(h.color, '#6366F1'),
+            scheduledDays: days.length > 0 ? days : [0, 1, 2, 3, 4, 5, 6],
+            history
+          };
+        });
+
+      const projects = (Array.isArray(s.projects) ? s.projects : [])
+        .filter(p => p && typeof p === 'object')
+        .map((p, i) => ({
+          ...p,
+          id: typeof p.id === 'string' && p.id ? p.id : `proj-${Date.now()}-${i}`,
+          name: typeof p.name === 'string' && p.name.trim() ? p.name : 'Proje',
+          color: safeColor(p.color, '#8B5CF6'),
+          cards: (Array.isArray(p.cards) ? p.cards : [])
+            .filter(c => c && typeof c === 'object')
+            .map((c, j) => ({
+              ...c,
+              id: typeof c.id === 'string' && c.id ? c.id : `card-${Date.now()}-${i}-${j}`,
+              title: typeof c.title === 'string' && c.title.trim() ? c.title : 'Kart',
+              desc: typeof c.desc === 'string' ? c.desc : '',
+              status: ['todo', 'inprogress', 'done'].includes(c.status) ? c.status : 'todo',
+              color: safeColor(c.color, '#8B5CF6'),
+              tags: (Array.isArray(c.tags) ? c.tags : [])
+                .filter(t => t && typeof t.name === 'string')
+                .map(t => ({ name: t.name, color: safeColor(t.color, '#EC4899') })),
+              checklist: (Array.isArray(c.checklist) ? c.checklist : [])
+                .filter(it => it && typeof it.text === 'string')
+                .map(it => ({ text: it.text, done: !!it.done }))
+            }))
+        }));
+      if (projects.length === 0) {
+        projects.push({ id: 'proj-' + Date.now(), name: 'Projelerim', color: '#8B5CF6', cards: [] });
+      }
+
+      const activeProjectId = projects.some(p => p.id === s.activeProjectId) ? s.activeProjectId : projects[0].id;
+      return { ...s, categories, habits, projects, activeProjectId };
+    }
+
+    let state = normalizeState(loadOrMigrateState());
 
     function saveState() {
-      localStorage.setItem('cosmos_tracker_v2', JSON.stringify(state));
+      try {
+        localStorage.setItem('cosmos_tracker_v2', JSON.stringify(state));
+      } catch (e) {
+        showToast('Veriler kaydedilemedi! Lütfen "Yedek İndir" ile yedek alın.', 'error');
+      }
+    }
+
+    // Days after today are not counted as missed in rates and reports.
+    function isFutureDay(dateObj) {
+      return formatDateKey(dateObj) > formatDateKey(new Date());
     }
 
     // --- TAB NAVIGATION ---
@@ -981,13 +1234,13 @@
       const filterEl = document.getElementById('habitCategoryFilter');
       const currentVal = filterEl.value || 'Tümü';
       filterEl.innerHTML = `<option value="Tümü">Tüm Kategoriler</option>` +
-        state.categories.map(c => `<option value="${c}">${c}</option>`).join('');
+        state.categories.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
       if ([...filterEl.options].some(o => o.value === currentVal)) {
         filterEl.value = currentVal;
       }
 
       const modalSelect = document.getElementById('habitCategorySelect');
-      modalSelect.innerHTML = state.categories.map(c => `<option value="${c}">${c}</option>`).join('');
+      modalSelect.innerHTML = state.categories.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
     }
 
     // --- RENDER HABITS VIEW ---
@@ -1022,14 +1275,14 @@
       document.getElementById('kpi-today').textContent = `${doneTodayCount}/${scheduledTodayHabits.length}`;
       document.getElementById('kpi-today-pct').textContent = `%${todayPct}`;
 
-      // KPI 2: Selected Week completion
+      // KPI 2: Selected Week completion (days still ahead are not counted yet)
       let weekScheduledTotal = 0;
       let weekDoneTotal = 0;
       state.habits.forEach(h => {
         const sched = h.scheduledDays || [0,1,2,3,4,5,6];
         weekDates.forEach((d, idx) => {
           const dKey = formatDateKey(d);
-          if (sched.includes(idx)) {
+          if (sched.includes(idx) && !isFutureDay(d)) {
             weekScheduledTotal++;
             if (h.history && h.history[dKey]) weekDoneTotal++;
           }
@@ -1102,7 +1355,8 @@
           const dKey = formatDateKey(d);
           const isScheduled = sched.includes(idx);
           const isDone = !!(h.history && h.history[dKey]);
-          if (isDone) completedThisWeek++;
+          // Off-day check-ins are extra; only scheduled days count toward the weekly target.
+          if (isDone && isScheduled) completedThisWeek++;
 
           if (isScheduled) {
             cellsHtml += `
@@ -1141,9 +1395,9 @@
             <div class="flex items-center gap-3">
               <span class="w-3.5 h-3.5 rounded-full shrink-0 shadow-sm" style="background-color: ${h.color}; box-shadow: 0 0 10px ${h.color}"></span>
               <div>
-                <p class="font-bold text-white">${h.name}</p>
+                <p class="font-bold text-white">${esc(h.name)}</p>
                 <div class="flex items-center gap-2 mt-0.5">
-                  <span class="text-[10px] px-2 py-0.5 rounded-md bg-slate-800 text-slate-300">${h.category}</span>
+                  <span class="text-[10px] px-2 py-0.5 rounded-md bg-slate-800 text-slate-300">${esc(h.category)}</span>
                   <span class="text-[10px] text-cyan-400/90">${schedBadgeText}</span>
                 </div>
               </div>
@@ -1181,9 +1435,10 @@
       // Render Streak Leaderboard
       const leaderEl = document.getElementById('streak-leaderboard');
       leaderEl.innerHTML = '';
-      const sortedHabits = [...state.habits].sort((a, b) => calculateHabitStreak(b) - calculateHabitStreak(a));
-      sortedHabits.forEach(h => {
-        const s = calculateHabitStreak(h);
+      const ranked = state.habits
+        .map(h => ({ h, s: calculateHabitStreak(h) }))
+        .sort((a, b) => b.s - a.s);
+      ranked.forEach(({ h, s }) => {
         const totalEver = h.history ? Object.keys(h.history).length : 0;
         const item = document.createElement('div');
         item.className = 'flex items-center justify-between p-3 rounded-xl bg-slate-900/75 border border-slate-800/90';
@@ -1191,7 +1446,7 @@
           <div class="flex items-center gap-3">
             <div class="w-2 h-9 rounded-full" style="background-color: ${h.color}; box-shadow: 0 0 8px ${h.color}"></div>
             <div>
-              <p class="text-sm font-bold text-white">${h.name}</p>
+              <p class="text-sm font-bold text-white">${esc(h.name)}</p>
               <p class="text-[11px] text-slate-400">Toplam geçmiş kayıt: ${totalEver} gün</p>
             </div>
           </div>
@@ -1237,6 +1492,7 @@
       const labels = weekDates.map((d, i) => `${DAY_NAMES[i]} (${d.getDate()}/${d.getMonth()+1})`);
 
       const dataPts = weekDates.map((d, dayIdx) => {
+        if (isFutureDay(d)) return null; // not happened yet: leave a gap instead of 0%
         const dKey = formatDateKey(d);
         const scheduledHabits = state.habits.filter(h => (h.scheduledDays || [0,1,2,3,4,5,6]).includes(dayIdx));
         if (scheduledHabits.length === 0) return 0;
@@ -1330,7 +1586,7 @@
     function syncColorFromHex(val) {
       let v = val.trim();
       if (!v.startsWith('#')) v = '#' + v;
-      if (/^#[0-9A-Fa-f]{6}$/.test(v)) {
+      if (HEX_RE.test(v)) {
         modalSelectedColor = v.toUpperCase();
         document.getElementById('nativeColorPicker').value = modalSelectedColor;
         document.getElementById('colorPreviewBadge').style.backgroundColor = modalSelectedColor;
@@ -1369,6 +1625,7 @@
       renderCategoryDropdowns();
       renderPresetSwatches();
 
+      document.getElementById('habitNameInput').classList.remove('input-error');
       if (editId) {
         const h = state.habits.find(x => String(x.id) === String(editId));
         if (!h) return;
@@ -1376,6 +1633,14 @@
         document.getElementById('editHabitId').value = h.id;
         document.getElementById('habitNameInput').value = h.name;
         document.getElementById('habitCategorySelect').value = h.category;
+        if (document.getElementById('habitCategorySelect').value !== h.category) {
+          // keep a category that no longer exists in the list instead of silently changing it
+          const opt = document.createElement('option');
+          opt.value = h.category;
+          opt.textContent = h.category;
+          document.getElementById('habitCategorySelect').appendChild(opt);
+          document.getElementById('habitCategorySelect').value = h.category;
+        }
         modalScheduledDays = [...(h.scheduledDays || [0,1,2,3,4,5,6])];
         setModalColor(h.color || '#00F2FE');
       } else {
@@ -1386,18 +1651,16 @@
         setModalColor('#00F2FE');
       }
       renderDayToggleButtons();
-      document.getElementById('habitModal').classList.remove('hidden');
-      document.getElementById('habitModal').classList.add('flex');
+      openModal('habitModal', 'habitNameInput');
     }
 
     function closeHabitModal() {
-      document.getElementById('habitModal').classList.add('hidden');
-      document.getElementById('habitModal').classList.remove('flex');
+      closeModal('habitModal');
     }
 
     function saveHabit() {
       const name = document.getElementById('habitNameInput').value.trim();
-      if (!name) return alert('Lütfen bir alışkanlık adı girin.');
+      if (!name) return flagInvalid('habitNameInput', 'Lütfen bir alışkanlık adı girin.');
       const category = document.getElementById('habitCategorySelect').value;
       const editId = document.getElementById('editHabitId').value;
 
@@ -1423,8 +1686,10 @@
       renderAll();
     }
 
-    function deleteHabit(id) {
-      if (!confirm('Bu alışkanlığı ve geçmiş kayıtlarını silmek istediğinize emin misiniz?')) return;
+    async function deleteHabit(id) {
+      const habit = state.habits.find(h => String(h.id) === String(id));
+      if (!habit) return;
+      if (!await uiConfirm(`"${habit.name}" alışkanlığını ve tüm geçmiş kayıtlarını silmek istediğinize emin misiniz?`)) return;
       state.habits = state.habits.filter(h => String(h.id) !== String(id));
       saveState();
       renderAll();
@@ -1433,21 +1698,20 @@
     // --- CATEGORY MODAL ---
     function openCategoryModal() {
       renderCategoryListModal();
-      document.getElementById('categoryModal').classList.remove('hidden');
-      document.getElementById('categoryModal').classList.add('flex');
+      document.getElementById('newCategoryName').value = '';
+      openModal('categoryModal', 'newCategoryName');
     }
 
     function closeCategoryModal() {
-      document.getElementById('categoryModal').classList.add('hidden');
-      document.getElementById('categoryModal').classList.remove('flex');
+      closeModal('categoryModal');
     }
 
     function renderCategoryListModal() {
       const container = document.getElementById('categoryListContainer');
-      container.innerHTML = state.categories.map(cat => `
+      container.innerHTML = state.categories.map((cat, idx) => `
         <div class="flex items-center justify-between px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-800">
-          <span class="text-xs font-semibold text-white">${cat}</span>
-          <button onclick="deleteCategory('${cat}')" class="text-slate-500 hover:text-rose-400 text-xs font-bold">Kaldır</button>
+          <span class="text-xs font-semibold text-white">${esc(cat)}</span>
+          <button onclick="deleteCategory(${idx})" class="text-slate-500 hover:text-rose-400 text-xs font-bold">Kaldır</button>
         </div>
       `).join('');
     }
@@ -1455,22 +1719,32 @@
     function addCategory() {
       const input = document.getElementById('newCategoryName');
       const val = input.value.trim();
-      if (!val) return;
-      if (!state.categories.includes(val)) {
-        state.categories.push(val);
-        saveState();
+      if (!val) return flagInvalid('newCategoryName', 'Lütfen bir kategori adı girin.');
+      if (state.categories.some(c => c.toLocaleLowerCase('tr') === val.toLocaleLowerCase('tr'))) {
+        return flagInvalid('newCategoryName', 'Bu kategori zaten var.');
       }
+      state.categories.push(val);
+      saveState();
       input.value = '';
+      input.focus();
       renderCategoryListModal();
-      renderCategoryDropdowns();
+      renderAll();
     }
 
-    function deleteCategory(cat) {
-      if (state.categories.length <= 1) return alert('En az 1 kategori kalmalıdır.');
-      state.categories = state.categories.filter(c => c !== cat);
+    async function deleteCategory(idx) {
+      const cat = state.categories[idx];
+      if (cat === undefined) return;
+      if (state.categories.length <= 1) return showToast('En az 1 kategori kalmalıdır.', 'error');
+      const remaining = state.categories.filter((_, i) => i !== idx);
+      const used = state.habits.filter(h => h.category === cat).length;
+      const message = used > 0
+        ? `"${cat}" kategorisini kaldırmak istiyor musunuz?\n${used} alışkanlık "${remaining[0]}" kategorisine taşınacak.`
+        : `"${cat}" kategorisini kaldırmak istiyor musunuz?`;
+      if (!await uiConfirm(message, 'Kaldır')) return;
+      state.categories = remaining;
+      state.habits.forEach(h => { if (h.category === cat) h.category = remaining[0]; });
       saveState();
       renderCategoryListModal();
-      renderCategoryDropdowns();
       renderAll();
     }
 
@@ -1494,23 +1768,22 @@
 
     function openProjectModal() {
       document.getElementById('newProjectName').value = '';
-      document.getElementById('projectModal').classList.remove('hidden');
-      document.getElementById('projectModal').classList.add('flex');
+      document.getElementById('newProjectName').classList.remove('input-error');
+      openModal('projectModal', 'newProjectName');
     }
 
     function closeProjectModal() {
-      document.getElementById('projectModal').classList.add('hidden');
-      document.getElementById('projectModal').classList.remove('flex');
+      closeModal('projectModal');
     }
 
     function saveNewProject() {
       const name = document.getElementById('newProjectName').value.trim();
-      const color = document.getElementById('newProjectColor').value || '#8b5cf6';
-      if (!name) return alert('Lütfen proje adı girin.');
+      const color = safeColor(document.getElementById('newProjectColor').value, '#8B5CF6');
+      if (!name) return flagInvalid('newProjectName', 'Lütfen proje adı girin.');
       const newProj = {
         id: 'proj-' + Date.now(),
         name,
-        color: color.toUpperCase(),
+        color,
         cards: []
       };
       state.projects.push(newProj);
@@ -1518,12 +1791,13 @@
       saveState();
       closeProjectModal();
       renderAll();
+      showToast(`"${name}" projesi oluşturuldu.`, 'success');
     }
 
-    function deleteCurrentProject() {
-      if (state.projects.length <= 1) return alert('En az bir aktif proje bulunmalıdır.');
+    async function deleteCurrentProject() {
+      if (state.projects.length <= 1) return showToast('En az bir proje bulunmalıdır.', 'error');
       const proj = getActiveProject();
-      if (!confirm(`"${proj.name}" projesini ve içindeki tüm kartları silmek istediğinize emin misiniz?`)) return;
+      if (!await uiConfirm(`"${proj.name}" projesini ve içindeki ${proj.cards.length} kartı silmek istediğinize emin misiniz?`)) return;
       state.projects = state.projects.filter(p => p.id !== proj.id);
       state.activeProjectId = state.projects[0].id;
       saveState();
@@ -1544,7 +1818,7 @@
                 : 'bg-slate-900/60 text-slate-400 border-slate-800 hover:text-white'
             }">
             <span class="w-2.5 h-2.5 rounded-full" style="background-color: ${p.color}"></span>
-            <span>${p.name}</span>
+            <span>${esc(p.name)}</span>
             <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-950 text-slate-300">${p.cards.length}</span>
           </button>
         `;
@@ -1576,7 +1850,7 @@
         <div class="space-card rounded-xl p-4 flex items-center justify-between">
           <div>
             <p class="text-[11px] text-slate-400 uppercase">Aktif Proje</p>
-            <p class="text-base font-bold text-white mt-0.5">${activeProj.name}</p>
+            <p class="text-base font-bold text-white mt-0.5">${esc(activeProj.name)}</p>
           </div>
           <span class="w-4 h-4 rounded-full" style="background-color: ${activeProj.color}; box-shadow: 0 0 12px ${activeProj.color}"></span>
         </div>
@@ -1621,7 +1895,7 @@
 
         const tagsHtml = (card.tags || []).map(t => `
           <span class="px-2 py-0.5 rounded-md text-[10px] font-bold text-slate-950" style="background-color: ${t.color}">
-            ${t.name}
+            ${esc(t.name)}
           </span>
         `).join('');
 
@@ -1641,7 +1915,7 @@
               ${checklist.map((item, idx) => `
                 <label class="flex items-center gap-2 text-xs cursor-pointer hover:text-white ${item.done ? 'line-through text-slate-500' : 'text-slate-300'}">
                   <input type="checkbox" ${item.done ? 'checked' : ''} onchange="toggleCardChecklistItem('${card.id}', ${idx})" class="rounded accent-cyan-400" />
-                  <span>${item.text}</span>
+                  <span>${esc(item.text)}</span>
                 </label>
               `).join('')}
             </div>
@@ -1658,12 +1932,12 @@
           <div class="h-1.5 w-16 rounded-full mb-2.5" style="background-color: ${card.color || '#8B5CF6'}; box-shadow: 0 0 8px ${card.color || '#8B5CF6'}"></div>
           ${tagsHtml ? `<div class="flex flex-wrap gap-1.5 mb-2">${tagsHtml}</div>` : ''}
           <div class="flex items-start justify-between gap-2">
-            <h4 class="text-sm font-bold text-white leading-snug">${card.title}</h4>
+            <h4 class="text-sm font-bold text-white leading-snug break-words min-w-0">${esc(card.title)}</h4>
             <button onclick="openKanbanCardModal('${card.status}', '${card.id}')" class="text-slate-400 hover:text-cyan-400 shrink-0 p-1" title="Kartı Düzenle">
               <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
             </button>
           </div>
-          ${card.desc ? `<p class="text-xs text-slate-400 mt-1.5 leading-relaxed">${card.desc}</p>` : ''}
+          ${card.desc ? `<p class="text-xs text-slate-400 mt-1.5 leading-relaxed whitespace-pre-line break-words">${esc(card.desc)}</p>` : ''}
           ${checklistPreviewHtml}
           <div class="flex items-center justify-between mt-3 pt-2 border-t border-slate-800/50 text-[10px] text-slate-400">
             <span>${card.createdAt || ''}</span>
@@ -1690,6 +1964,8 @@
     }
 
     function leaveDrop(ev) {
+      // dragleave also fires when moving over a card inside the column; ignore that
+      if (ev.currentTarget.contains(ev.relatedTarget)) return;
       ev.currentTarget.classList.remove('drag-over');
     }
 
@@ -1752,22 +2028,23 @@
         document.getElementById('deleteCardBtn').classList.add('hidden');
       }
 
+      document.getElementById('cardTitleInput').classList.remove('input-error');
+      document.getElementById('newTagInput').value = '';
+      document.getElementById('newChecklistItemInput').value = '';
       renderModalTagsAndChecklist();
-      document.getElementById('kanbanCardModal').classList.remove('hidden');
-      document.getElementById('kanbanCardModal').classList.add('flex');
+      openModal('kanbanCardModal', 'cardTitleInput');
       lucide.createIcons();
     }
 
     function closeKanbanCardModal() {
-      document.getElementById('kanbanCardModal').classList.add('hidden');
-      document.getElementById('kanbanCardModal').classList.remove('flex');
+      closeModal('kanbanCardModal');
     }
 
     function renderModalTagsAndChecklist() {
       const tagEl = document.getElementById('modalCardTags');
       tagEl.innerHTML = modalCardTags.map((t, idx) => `
         <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold text-slate-950" style="background-color: ${t.color}">
-          ${t.name}
+          ${esc(t.name)}
           <button type="button" onclick="removeModalTag(${idx})" class="hover:opacity-75">×</button>
         </span>
       `).join('');
@@ -1777,7 +2054,7 @@
         <div class="flex items-center justify-between px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-xs">
           <label class="flex items-center gap-2 cursor-pointer text-slate-200">
             <input type="checkbox" ${item.done ? 'checked' : ''} onchange="modalCardChecklist[${idx}].done = this.checked" class="accent-cyan-400" />
-            <span>${item.text}</span>
+            <span>${esc(item.text)}</span>
           </label>
           <button type="button" onclick="removeModalChecklist(${idx})" class="text-slate-500 hover:text-rose-400 font-bold">Sil</button>
         </div>
@@ -1788,9 +2065,10 @@
       const nameInput = document.getElementById('newTagInput');
       const colorInput = document.getElementById('newTagColor');
       const name = nameInput.value.trim();
-      if (!name) return;
-      modalCardTags.push({ name, color: colorInput.value.toUpperCase() });
+      if (!name) return flagInvalid('newTagInput', 'Etiket adı boş olamaz.');
+      modalCardTags.push({ name, color: safeColor(colorInput.value, '#EC4899') });
       nameInput.value = '';
+      nameInput.focus();
       renderModalTagsAndChecklist();
     }
 
@@ -1805,6 +2083,7 @@
       if (!text) return;
       modalCardChecklist.push({ text, done: false });
       inp.value = '';
+      inp.focus();
       renderModalTagsAndChecklist();
     }
 
@@ -1817,10 +2096,13 @@
       const proj = getActiveProject();
       if (!proj) return;
       const title = document.getElementById('cardTitleInput').value.trim();
-      if (!title) return alert('Lütfen kart başlığı girin.');
+      if (!title) return flagInvalid('cardTitleInput', 'Lütfen kart başlığı girin.');
       const desc = document.getElementById('cardDescInput').value.trim();
       const status = document.getElementById('cardStatusSelect').value;
-      const color = document.getElementById('cardHexInput').value.trim() || '#8B5CF6';
+      let hex = document.getElementById('cardHexInput').value.trim();
+      if (hex && !hex.startsWith('#')) hex = '#' + hex;
+      if (hex && !HEX_RE.test(hex)) return flagInvalid('cardHexInput', 'Renk kodu #RRGGBB biçiminde olmalı (örn. #8B5CF6).');
+      const color = safeColor(hex, '#8B5CF6');
       const editId = document.getElementById('editCardId').value;
 
       if (editId) {
@@ -1847,10 +2129,12 @@
       renderAll();
     }
 
-    function deleteCardFromModal() {
+    async function deleteCardFromModal() {
       const editId = document.getElementById('editCardId').value;
       const proj = getActiveProject();
       if (!proj || !editId) return;
+      const card = proj.cards.find(c => c.id === editId);
+      if (!card || !await uiConfirm(`"${card.title}" kartını silmek istediğinize emin misiniz?`)) return;
       proj.cards = proj.cards.filter(c => c.id !== editId);
       saveState();
       closeKanbanCardModal();
@@ -1886,7 +2170,9 @@
         dayLabels.push(`${d}`);
 
         const scheduledHabits = state.habits.filter(h => (h.scheduledDays || [0,1,2,3,4,5,6]).includes(dayIdx));
-        if (scheduledHabits.length === 0) {
+        if (isFutureDay(dateObj)) {
+          dailyRates.push(null); // not happened yet: leave a gap instead of a drop to 0%
+        } else if (scheduledHabits.length === 0) {
           dailyRates.push(0);
         } else {
           const done = scheduledHabits.filter(h => h.history && h.history[dKey]).length;
@@ -1937,6 +2223,7 @@
         let doneTotal = 0;
         for (let d = 1; d <= daysInMonth; d++) {
           const dateObj = new Date(year, month, d);
+          if (isFutureDay(dateObj)) break;
           const dKey = formatDateKey(dateObj);
           const dayIdx = getDayIndexMon0(dateObj);
           catHabits.forEach(h => {
@@ -2020,6 +2307,7 @@
         let doneDays = 0;
         for (let d = 1; d <= daysInMonth; d++) {
           const dateObj = new Date(year, month, d);
+          if (isFutureDay(dateObj)) break;
           const dKey = formatDateKey(dateObj);
           const dayIdx = getDayIndexMon0(dateObj);
           if ((h.scheduledDays || [0,1,2,3,4,5,6]).includes(dayIdx)) {
@@ -2034,8 +2322,8 @@
           <div class="flex items-center justify-between text-xs mb-1.5">
             <div class="flex items-center gap-2">
               <span class="w-2.5 h-2.5 rounded-full" style="background-color: ${h.color}"></span>
-              <span class="font-bold text-white">${h.name}</span>
-              <span class="text-[10px] text-slate-400">(${h.category})</span>
+              <span class="font-bold text-white">${esc(h.name)}</span>
+              <span class="text-[10px] text-slate-400">(${esc(h.category)})</span>
             </div>
             <span class="font-bold text-cyan-300">${doneDays}/${schedDays} Gün (%${pct})</span>
           </div>
@@ -2082,30 +2370,43 @@
     }
 
     function importAllData(event) {
-      const file = event.target.files[0];
+      const input = event.target;
+      const file = input.files[0];
+      // reset so choosing the same file again still fires "change"
+      input.value = '';
       if (!file) return;
       const reader = new FileReader();
-      reader.onload = function(e) {
+      reader.onload = async function(e) {
+        let parsed;
         try {
-          const parsed = JSON.parse(e.target.result);
-          if (parsed && Array.isArray(parsed.habits)) {
-            state = parsed;
-            saveState();
-            renderAll();
-            alert('Cosmos yedeğiniz başarıyla yüklendi!');
-          } else if (Array.isArray(parsed)) {
-            // Backward compatibility with v1 backup files
-            localStorage.setItem('desktop_habits_v1', JSON.stringify(parsed));
-            localStorage.removeItem('cosmos_tracker_v2');
-            state = loadOrMigrateState();
-            saveState();
-            renderAll();
-            alert('v1 yedeğiniz başarıyla v2 uzay üssüne aktarıldı!');
-          }
+          parsed = JSON.parse(e.target.result);
         } catch (err) {
-          alert('Yedek dosyası okunamadı!');
+          return showDialog('Yedek dosyası okunamadı. Dosyanın bir Cosmos .json yedeği olduğundan emin olun.');
         }
+        const isV2 = parsed && typeof parsed === 'object' && !Array.isArray(parsed) &&
+          (Array.isArray(parsed.habits) || Array.isArray(parsed.projects));
+        const isV1 = Array.isArray(parsed);
+        if (!isV2 && !isV1) {
+          return showDialog('Bu dosya tanınan bir Cosmos yedeği değil.');
+        }
+        const ok = await uiConfirm(
+          'Yedek yüklenince mevcut tüm alışkanlık ve proje verileriniz bu yedekle değiştirilecek.\nDevam etmeden önce "Yedek İndir" ile mevcut verinizi yedeklemeniz önerilir.',
+          'Yedeği Yükle'
+        );
+        if (!ok) return;
+        if (isV2) {
+          state = normalizeState(parsed);
+        } else {
+          // Backward compatibility with v1 backup files
+          localStorage.setItem('desktop_habits_v1', JSON.stringify(parsed));
+          localStorage.removeItem('cosmos_tracker_v2');
+          state = normalizeState(loadOrMigrateState());
+        }
+        saveState();
+        renderAll();
+        showToast(isV2 ? 'Yedek başarıyla yüklendi.' : 'v1 yedeği başarıyla aktarıldı.', 'success');
       };
+      reader.onerror = () => showDialog('Dosya okunamadı.');
       reader.readAsText(file);
     }
 

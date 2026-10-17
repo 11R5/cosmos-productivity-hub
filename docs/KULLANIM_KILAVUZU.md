@@ -40,6 +40,8 @@ Bu kılavuz Cosmos'u ilk kez kullananlar için hazırlandı. 5 dakikada temel ku
 | **Aylık / Yıllık Rapor & 3D Analiz** | Geçmişe dönük grafikler ve ısı haritası |
 | **Yedek İndir / Yedek Yükle** | Tüm verini `.json` dosyası olarak alıp geri yükleme |
 
+> 💡 **İpucu:** Açılan pencerelerde imleç ilk kutuda hazır bekler. **Enter** kaydeder, **Esc** pencereyi kapatır.
+
 ## 3. Alışkanlık Üssü
 
 ![Alışkanlık Üssü](screenshots/01-habits.png)

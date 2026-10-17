@@ -11,7 +11,7 @@
 ![Platforms](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-0EA5E9)
 ![License](https://img.shields.io/badge/license-Apache%202.0-blue)
 
-[Download](#-download) · [Features](#-features) · [User Guide](docs/USER_GUIDE.md) · [Build from source](#-build-from-source) · [🇹🇷 Türkçe](README.tr.md)
+[Download](#-download) · [Install](#-installation) · [Features](#-features) · [User Guide](docs/USER_GUIDE.md) · [Docs](#-documentation) · [Build from source](#-build-from-source) · [🇹🇷 Türkçe](README.tr.md)
 
 <img src="docs/screenshots/01-habits.png" alt="Cosmos habit tracker" width="900" />
 
@@ -38,10 +38,60 @@ Get the latest version from the [**Releases page**](https://github.com/11R5/cosm
 | **Linux** | `Cosmos-x.y.z-linux-x86_64.AppImage` | Works on most distributions |
 | | `Cosmos-x.y.z-linux-amd64.deb` | Debian / Ubuntu / Mint |
 
-> **The builds are not code-signed yet.** This is normal for small open-source projects, but you will see a warning the first time you open the app:
-> - **Windows SmartScreen:** click **More info**, then **Run anyway**.
-> - **macOS:** right-click the app, choose **Open**, then confirm. If macOS says the app is "damaged", run `xattr -cr /Applications/Cosmos.app` in Terminal.
-> - **Linux AppImage:** make the file executable with `chmod +x Cosmos-*.AppImage`, then run it.
+> **The builds are not code-signed yet.** This is normal for small open-source projects, but your system will show a warning the first time you open the app. The steps below explain how to get past it.
+
+## 🧭 Installation
+
+<details open>
+<summary><b>🪟 Windows 10 / 11</b></summary>
+
+**Installer (recommended)**
+1. Download `Cosmos-x.y.z-setup.exe` from [Releases](https://github.com/11R5/cosmos-productivity-hub/releases/latest).
+2. Double-click it. If **Windows protected your PC** (SmartScreen) appears, click **More info**, then **Run anyway**.
+3. Choose the install folder and click **Install**. Cosmos is added to the Start Menu and the desktop.
+
+**Portable (no installation)**
+1. Download `Cosmos-x.y.z-portable.exe` and put it anywhere, e.g. your desktop or a USB stick.
+2. Double-click to run it. SmartScreen may ask once, as above.
+
+**Uninstall:** Settings → Apps → Cosmos → Uninstall. Your data is kept in `%APPDATA%\aliskanlik-takip-paneli`; delete that folder too if you want a clean removal.
+</details>
+
+<details>
+<summary><b>🍎 macOS 11+ (Apple Silicon & Intel)</b></summary>
+
+1. Download the `.dmg` for your Mac:
+   - Apple menu → **About This Mac**. If it shows *Apple M1/M2/M3/M4*, download `mac-arm64.dmg`; for *Intel*, download `mac-x64.dmg`.
+2. Open the `.dmg` and drag **Cosmos** into **Applications**.
+3. The first time, **right-click** Cosmos in Applications, choose **Open**, then click **Open** again.
+4. If macOS says *"Cosmos is damaged and can't be opened"*, open Terminal, run the command below, then start Cosmos normally:
+   ```bash
+   xattr -cr /Applications/Cosmos.app
+   ```
+
+**Uninstall:** drag Cosmos from Applications to the Trash. Data lives in `~/Library/Application Support/aliskanlik-takip-paneli`.
+</details>
+
+<details>
+<summary><b>🐧 Linux (x64)</b></summary>
+
+**Debian / Ubuntu / Mint (.deb)**
+```bash
+sudo apt install ./Cosmos-x.y.z-linux-amd64.deb
+```
+Then launch **Cosmos** from your app menu. To uninstall, run `sudo apt remove aliskanlik-takip-paneli`.
+
+**Any distribution (AppImage)**
+```bash
+chmod +x Cosmos-x.y.z-linux-x86_64.AppImage
+./Cosmos-x.y.z-linux-x86_64.AppImage
+```
+If it doesn't start on Ubuntu 22.04+, install FUSE 2 with `sudo apt install libfuse2`.
+
+Data lives in `~/.config/aliskanlik-takip-paneli`.
+</details>
+
+**Updating:** download the new version and install it over the old one (or replace the portable file). Your data stays where it is.
 
 ## ✨ Features
 
@@ -133,6 +183,7 @@ npm start
 | Command | What it does |
 |---|---|
 | `npm start` | Runs the app in development mode |
+| `npm test` | Runs the end-to-end smoke test (34 checks with real keyboard input) |
 | `npm run build:win` | Builds the Windows installer and portable `.exe` into `dist/` |
 | `npm run build:mac` | Builds `.dmg` files for Intel and Apple Silicon (must run on macOS) |
 | `npm run build:linux` | Builds `.AppImage` and `.deb` (run on Linux) |
@@ -146,7 +197,7 @@ You can also open `src/index.html` directly in a browser. In that case data is s
 ### Project structure
 
 ```
-├── main.js                 Electron main process (window + data folder)
+├── main.js                 Electron main process (window, data folder, single instance)
 ├── src/
 │   ├── index.html          The whole app: markup, styles and logic
 │   ├── assets/             App icon (PNG)
@@ -154,19 +205,32 @@ You can also open `src/index.html` directly in a browser. In that case data is s
 │   └── vendor/             Bundled Tailwind CSS, Chart.js, Lucide, fonts
 ├── build/icon.png          Icon used by electron-builder
 ├── Logo/                   Original logo artwork
-├── scripts/                vendor, icon and screenshot helpers
-├── docs/                   User guides and screenshots
-└── .github/workflows/      Cross-platform build and release pipeline
+├── scripts/                vendor, icon, screenshot and smoke-test helpers
+├── docs/                   Guides, plan, technical docs, screenshots
+├── CHANGELOG.md            Release history
+└── .github/workflows/      Test, cross-platform build and release pipeline
 ```
 
 ### Making a release
 
-Push a version tag. GitHub Actions then builds Windows, macOS and Linux, and attaches the files to a new GitHub Release:
+Bump `version` in `package.json`, add a `CHANGELOG.md` entry, then push a version tag. GitHub Actions runs the tests, builds Windows, macOS and Linux, and attaches the files to a new GitHub Release:
 
 ```bash
-git tag v2.1.0
-git push origin v2.1.0
+git tag vX.Y.Z
+git push origin vX.Y.Z
 ```
+
+## 📚 Documentation
+
+| Document | Language | Contents |
+|---|---|---|
+| [User Guide](docs/USER_GUIDE.md) | English | How to use every screen |
+| [Kullanım Kılavuzu](docs/KULLANIM_KILAVUZU.md) | Turkish | The same guide in Turkish |
+| [Project Plan](docs/PROJE_PLANI.md) | Turkish | Vision, scope, roadmap, distribution, risks |
+| [Technical Documentation](docs/TEKNIK_DOKUMAN.md) | Turkish | Architecture, data model, render cycle, security, build, tests |
+| [Workflows](docs/IS_AKISLARI.md) | Turkish | User flows, development, release and bug-tracking workflows (with diagrams) |
+| [Known Issues](docs/BILINEN_SORUNLAR.md) | Turkish | Bug log: what was fixed and what is still open |
+| [Changelog](CHANGELOG.md) | English | What changed in each version |
 
 ## 🗺️ Roadmap
 
@@ -174,20 +238,25 @@ git push origin v2.1.0
 - [x] Fully offline (all assets bundled)
 - [x] App icon
 - [x] Automated releases via GitHub Actions
+- [x] End-to-end smoke test in CI
+- [ ] Upgrade to a supported Electron version
+- [ ] File-based storage with automatic backups
 - [ ] English localization (i18n)
+- [ ] Reminders and notifications
 - [ ] Automatic updates
 - [ ] Code signing for Windows and macOS
-- [ ] File-based storage with automatic backups
-- [ ] Reminders and notifications
 
-Have an idea? [Open an issue](https://github.com/11R5/cosmos-productivity-hub/issues).
+See the full [Project Plan](docs/PROJE_PLANI.md). Have an idea? [Open an issue](https://github.com/11R5/cosmos-productivity-hub/issues).
 
 ## 🤝 Contributing
 
 1. Fork the repo and create a feature branch.
-2. Make your changes in `src/index.html`, then run `npm run build:css` and test with `npm start`.
-3. Keep the data schema **backward compatible**. Existing users' data must keep loading.
-4. Open a pull request with a short description and, ideally, a screenshot.
+2. Make your changes in `src/index.html`, then run `npm run build:css` and check them with `npm start`.
+3. Run `npm test`. All checks must pass.
+4. Keep the data schema **backward compatible**. Existing users' data must keep loading.
+5. Open a pull request with a short description and, ideally, a screenshot.
+
+See [Workflows](docs/IS_AKISLARI.md) for the full checklist.
 
 ## 📄 License
 

@@ -11,7 +11,7 @@
 ![Platformlar](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-0EA5E9)
 ![Lisans](https://img.shields.io/badge/lisans-Apache%202.0-blue)
 
-[İndir](https://github.com/11R5/cosmos-productivity-hub/releases) · [Özellikler](#-özellikler) · [Kullanım Kılavuzu](docs/KULLANIM_KILAVUZU.md) · [Kaynaktan derleme](#-kaynaktan-derleme) · [🇬🇧 English](README.md)
+[İndir](https://github.com/11R5/cosmos-productivity-hub/releases) · [Kurulum](#-kurulum) · [Özellikler](#-özellikler) · [Kullanım Kılavuzu](docs/KULLANIM_KILAVUZU.md) · [Dokümanlar](#-dokümanlar) · [Kaynaktan derleme](#-kaynaktan-derleme) · [🇬🇧 English](README.md)
 
 <img src="docs/screenshots/01-habits.png" alt="Cosmos alışkanlık takibi" width="900" />
 
@@ -38,10 +38,60 @@ En güncel sürümü [**Releases sayfasından**](https://github.com/11R5/cosmos-
 | **Linux** | `Cosmos-x.y.z-linux-x86_64.AppImage` | Çoğu dağıtımda çalışır |
 | | `Cosmos-x.y.z-linux-amd64.deb` | Debian / Ubuntu / Mint |
 
-> **Dosyalar henüz dijital olarak imzalı değil.** Küçük açık kaynak projelerde bu normaldir, ancak uygulamayı ilk açtığında bir uyarı görürsün:
-> - **Windows SmartScreen:** **Ek bilgi**'ye, ardından **Yine de çalıştır**'a tıkla.
-> - **macOS:** Uygulamaya sağ tıklayıp **Aç**'ı seç ve onayla. "Hasarlı" uyarısı alırsan Terminal'de `xattr -cr /Applications/Cosmos.app` komutunu çalıştır.
-> - **Linux AppImage:** Önce `chmod +x Cosmos-*.AppImage` komutuyla dosyayı çalıştırılabilir yap, sonra aç.
+> **Dosyalar henüz dijital olarak imzalı değil.** Küçük açık kaynak projelerde bu normaldir, ancak ilk açılışta sistem bir uyarı gösterir. Aşağıdaki adımlarda bu uyarıyı nasıl geçeceğin anlatılıyor.
+
+## 🧭 Kurulum
+
+<details open>
+<summary><b>🪟 Windows 10 / 11</b></summary>
+
+**Kurulum dosyası (önerilen)**
+1. [Releases](https://github.com/11R5/cosmos-productivity-hub/releases/latest) sayfasından `Cosmos-x.y.z-setup.exe` dosyasını indir.
+2. Dosyaya çift tıkla. **"Windows bilgisayarınızı korudu"** (SmartScreen) uyarısı çıkarsa **Ek bilgi**'ye, ardından **Yine de çalıştır**'a tıkla.
+3. Kurulum klasörünü seç ve **Yükle**'ye bas. Cosmos, Başlat menüsüne ve masaüstüne eklenir.
+
+**Taşınabilir (kurulumsuz)**
+1. `Cosmos-x.y.z-portable.exe` dosyasını indir ve istediğin yere koy (masaüstü, USB bellek…).
+2. Çift tıklayıp çalıştır. SmartScreen bir kez yukarıdaki gibi sorabilir.
+
+**Kaldırma:** Ayarlar → Uygulamalar → Cosmos → Kaldır. Verilerin `%APPDATA%\aliskanlik-takip-paneli` klasöründe kalır; tamamen silmek istersen o klasörü de sil.
+</details>
+
+<details>
+<summary><b>🍎 macOS 11+ (Apple Silicon ve Intel)</b></summary>
+
+1. Mac'ine uygun `.dmg` dosyasını indir:
+   - Apple menüsü → **Bu Mac Hakkında**'ya bak. *Apple M1/M2/M3/M4* yazıyorsa `mac-arm64.dmg`, *Intel* yazıyorsa `mac-x64.dmg` dosyasını indir.
+2. `.dmg`'yi aç ve **Cosmos**'u **Uygulamalar** klasörüne sürükle.
+3. İlk açılışta Uygulamalar'daki Cosmos'a **sağ tıkla** → **Aç** → tekrar **Aç**.
+4. *"Cosmos hasarlı ve açılamıyor"* uyarısı çıkarsa Terminal'i açıp aşağıdaki komutu çalıştır, sonra Cosmos'u normal şekilde aç:
+   ```bash
+   xattr -cr /Applications/Cosmos.app
+   ```
+
+**Kaldırma:** Cosmos'u Uygulamalar'dan Çöp Sepeti'ne sürükle. Verilerin `~/Library/Application Support/aliskanlik-takip-paneli` klasöründedir.
+</details>
+
+<details>
+<summary><b>🐧 Linux (x64)</b></summary>
+
+**Debian / Ubuntu / Mint (.deb)**
+```bash
+sudo apt install ./Cosmos-x.y.z-linux-amd64.deb
+```
+Sonra uygulama menüsünden **Cosmos**'u aç. Kaldırmak için `sudo apt remove aliskanlik-takip-paneli` komutunu çalıştır.
+
+**Tüm dağıtımlar (AppImage)**
+```bash
+chmod +x Cosmos-x.y.z-linux-x86_64.AppImage
+./Cosmos-x.y.z-linux-x86_64.AppImage
+```
+Ubuntu 22.04 ve sonrasında açılmazsa `sudo apt install libfuse2` komutuyla FUSE 2'yi kur.
+
+Verilerin `~/.config/aliskanlik-takip-paneli` klasöründedir.
+</details>
+
+**Güncelleme:** Yeni sürümü indirip eskisinin üzerine kur (veya taşınabilir dosyayı değiştir). Verilerin olduğu yerde kalır.
 
 ## ✨ Özellikler
 
@@ -129,6 +179,7 @@ npm start
 | Komut | Ne yapar |
 |---|---|
 | `npm start` | Uygulamayı geliştirme modunda açar |
+| `npm test` | Uçtan uca duman testini çalıştırır (gerçek klavye girişiyle 34 kontrol) |
 | `npm run build:win` | Windows kurulum dosyasını ve taşınabilir `.exe`'yi `dist/` klasörüne üretir |
 | `npm run build:mac` | Intel ve Apple Silicon için `.dmg` üretir (macOS'ta çalıştırılmalı) |
 | `npm run build:linux` | `.AppImage` ve `.deb` üretir (Linux'ta çalıştırılmalı) |
@@ -141,12 +192,28 @@ npm start
 
 ### Yeni sürüm yayınlama
 
-Bir sürüm etiketi göndermen yeterli. GitHub Actions Windows, macOS ve Linux sürümlerini derler ve dosyaları yeni bir GitHub Release'e ekler:
+1. `package.json` içindeki `version` alanını artır.
+2. `CHANGELOG.md`'ye yeni sürümün notunu ekle.
+3. Bir sürüm etiketi gönder:
 
 ```bash
-git tag v2.1.0
-git push origin v2.1.0
+git tag vX.Y.Z
+git push origin vX.Y.Z
 ```
+
+GitHub Actions testleri çalıştırır, Windows, macOS ve Linux sürümlerini derler ve dosyaları yeni bir GitHub Release'e ekler.
+
+## 📚 Dokümanlar
+
+| Belge | İçerik |
+|---|---|
+| [Kullanım Kılavuzu](docs/KULLANIM_KILAVUZU.md) | Her ekranın adım adım kullanımı |
+| [Proje Planı](docs/PROJE_PLANI.md) | Vizyon, kapsam, yol haritası, dağıtım, riskler |
+| [Teknik Doküman](docs/TEKNIK_DOKUMAN.md) | Mimari, veri modeli, çizim döngüsü, güvenlik, derleme, testler |
+| [İş Akışları](docs/IS_AKISLARI.md) | Kullanıcı, geliştirme, sürüm yayınlama ve hata takibi akışları (diyagramlı) |
+| [Bilinen Sorunlar](docs/BILINEN_SORUNLAR.md) | Hata kaydı: düzeltilenler ve açık olanlar |
+| [Değişiklik Günlüğü](CHANGELOG.md) | Her sürümde neler değişti (İngilizce) |
+| [User Guide](docs/USER_GUIDE.md) | İngilizce kullanım kılavuzu |
 
 ## 🗺️ Yol Haritası
 
@@ -154,13 +221,25 @@ git push origin v2.1.0
 - [x] Tamamen internetsiz çalışma
 - [x] Uygulama ikonu
 - [x] GitHub Actions ile otomatik sürüm yayınlama
+- [x] CI'da uçtan uca duman testi
+- [ ] Desteklenen bir Electron sürümüne geçiş
+- [ ] Dosya tabanlı veri ve otomatik yedekleme
 - [ ] İngilizce dil desteği
+- [ ] Hatırlatıcılar ve bildirimler
 - [ ] Otomatik güncelleme
 - [ ] Windows ve macOS için dijital imza
-- [ ] Dosya tabanlı veri ve otomatik yedekleme
-- [ ] Hatırlatıcılar ve bildirimler
 
-Bir fikrin mi var? [Issue aç](https://github.com/11R5/cosmos-productivity-hub/issues).
+Ayrıntılar [Proje Planı](docs/PROJE_PLANI.md)'nda. Bir fikrin mi var? [Issue aç](https://github.com/11R5/cosmos-productivity-hub/issues).
+
+## 🤝 Katkıda bulunma
+
+1. Repoyu fork'la ve yeni bir dal aç.
+2. Değişikliğini `src/index.html` içinde yap. Ardından `npm run build:css` çalıştır ve `npm start` ile dene.
+3. `npm test` çalıştır; tüm kontroller geçmeli.
+4. Veri şemasını **geriye uyumlu** tut; mevcut kullanıcıların verileri yüklenmeye devam etmeli.
+5. Kısa bir açıklama ve mümkünse ekran görüntüsüyle Pull Request aç.
+
+Tam kontrol listesi için [İş Akışları](docs/IS_AKISLARI.md) belgesine bak.
 
 ## 📄 Lisans
 

@@ -40,6 +40,8 @@ The first launch includes a few sample habits and projects. Feel free to edit or
 | **Aylık / Yıllık Rapor & 3D Analiz** | *Monthly / Yearly Reports*: charts and the activity heatmap |
 | **Yedek İndir / Yedek Yükle** | *Download / Restore backup*: export or import all data as `.json` |
 
+> 💡 **Tip:** When a dialog opens, the first field is already focused. **Enter** saves and **Esc** closes it.
+
 ## 3. Habits
 
 ![Habits](screenshots/01-habits.png)
