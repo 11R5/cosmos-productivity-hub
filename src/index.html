@@ -3,13 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>COSMOS // Alışkanlık & Proje Üssü v2.0</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/lucide@latest"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <title>Cosmos — Alışkanlık & Proje Üssü</title>
+  <link rel="stylesheet" href="vendor/fonts/fonts.css" />
+  <link rel="stylesheet" href="vendor/tailwind.css" />
+  <script src="vendor/lucide.min.js"></script>
+  <script src="vendor/chart.umd.min.js"></script>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap');
-
     :root {
       --bg-deep: #050711;
       --neon-cyan: #00f2fe;
@@ -117,13 +116,11 @@
   <!-- Top Navigation Header -->
   <header class="sticky top-0 z-40 border-b border-indigo-500/20 bg-[#070b19]/80 backdrop-blur-xl px-6 py-3.5 flex flex-wrap items-center justify-between gap-4">
     <div class="flex items-center gap-3.5">
-      <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-indigo-600 via-violet-600 to-cyan-500 flex items-center justify-center shadow-lg shadow-indigo-500/30 ring-1 ring-white/20">
-        <i data-lucide="orbit" class="w-6 h-6 text-white"></i>
-      </div>
+      <img src="assets/icon.png" alt="Cosmos" class="w-12 h-12 drop-shadow-[0_0_12px_rgba(99,102,241,0.45)]" />
       <div>
         <div class="flex items-center gap-2.5">
           <h1 class="text-xl font-bold tracking-wider text-white font-space">COSMOS</h1>
-          <span class="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/30">v2.0 UZAY ÜSSÜ</span>
+          <span class="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/30">v2.1 UZAY ÜSSÜ</span>
         </div>
         <p class="text-xs text-slate-400">Alışkanlık Telemetrisi, Geçmiş Arşivi & Trello/Kanban Görev Komuta Merkezi</p>
       </div>
@@ -512,7 +509,7 @@
       <div class="space-y-4">
         <div>
           <label class="block text-xs font-semibold text-slate-300 mb-1">Alışkanlık / Rutin Adı</label>
-          <input id="habitNameInput" type="text" placeholder="Örn: SONARKH Müzik Prodüksiyonu / İngilizce Pratiği" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-400" />
+          <input id="habitNameInput" type="text" placeholder="Örn: Kitap Okuma / İngilizce Pratiği" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-400" />
         </div>
 
         <div>
@@ -627,7 +624,7 @@
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div class="sm:col-span-2">
             <label class="block text-xs font-semibold text-slate-300 mb-1">Kart Başlığı</label>
-            <input id="cardTitleInput" type="text" placeholder="Örn: Sentry SDK Hata Loglarını Entegre Et" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-violet-400" />
+            <input id="cardTitleInput" type="text" placeholder="Örn: Ana sayfa tasarımını bitir" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-violet-400" />
           </div>
           <div>
             <label class="block text-xs font-semibold text-slate-300 mb-1">Durum (Kolon)</label>
@@ -821,7 +818,7 @@
         initialHabits = [
           {
             id: 101,
-            name: 'SONARKH',
+            name: 'Kitap Okuma',
             category: 'Üretkenlik',
             color: '#6366F1',
             scheduledDays: [0, 1, 2, 3, 4, 5, 6],
@@ -837,7 +834,7 @@
           },
           {
             id: 103,
-            name: 'NFB',
+            name: 'Sabah Yürüyüşü',
             category: 'Sağlık & Spor',
             color: '#10B981',
             scheduledDays: [0, 1, 2, 3, 4, 5, 6],
@@ -849,27 +846,27 @@
       const defaultProjects = [
         {
           id: 'proj-1',
-          name: 'SONARKH & Müzik Üssü',
+          name: 'Başlangıç Projesi',
           color: '#6366F1',
           cards: [
             {
               id: 'card-1',
-              title: 'Yeni Parça Mastering & DistroKid Yüklemesi',
-              desc: 'Spotify ve Apple Music çıkış tarihlerini kontrol et',
+              title: 'Cosmos turu',
+              desc: 'Uygulamanın temel özelliklerini keşfet',
               status: 'inprogress',
               color: '#00F2FE',
-              tags: [{ name: 'Prodüksiyon', color: '#8B5CF6' }, { name: 'Yüksek Öncelik', color: '#EC4899' }],
+              tags: [{ name: 'Başlangıç', color: '#8B5CF6' }, { name: 'Yüksek Öncelik', color: '#EC4899' }],
               checklist: [
-                { text: 'Mix son kontrolleri', done: true },
-                { text: 'Kapak tasarımı 3000x3000px', done: true },
-                { text: 'DistroKid metadata girişi', done: false }
+                { text: 'İlk alışkanlığını ekle', done: true },
+                { text: 'Bir günü işaretle', done: true },
+                { text: 'Raporlar sekmesine göz at', done: false }
               ],
               createdAt: formatDateKey(new Date())
             },
             {
               id: 'card-2',
-              title: 'Web Sitesi (sonarkh.com) Güncellemesi',
-              desc: 'Yeni albüm bağlantılarını ana sayfaya ekle',
+              title: 'Kişisel web sitesini güncelle',
+              desc: 'Yeni projeleri ana sayfaya ekle',
               status: 'todo',
               color: '#F59E0B',
               tags: [{ name: 'Web', color: '#06B6D4' }],
@@ -880,19 +877,19 @@
         },
         {
           id: 'proj-2',
-          name: 'Yazılım & Oyun Geliştirme',
+          name: 'Yazılım Projesi',
           color: '#10B981',
           cards: [
             {
               id: 'card-3',
-              title: 'Mobil Uygulama Sentry SDK & Firebase Testi',
-              desc: 'Android build alıp test dağıtımını doğrula',
+              title: 'Mobil uygulama test sürümü',
+              desc: 'Test sürümünü derleyip dağıt',
               status: 'done',
               color: '#10B981',
               tags: [{ name: 'Android', color: '#10B981' }],
               checklist: [
-                { text: 'Sentry hata log kontrolü', done: true },
-                { text: 'Firebase App Distribution yüklemesi', done: true }
+                { text: 'Hata kayıtlarını kontrol et', done: true },
+                { text: 'Test kullanıcılarına gönder', done: true }
               ],
               createdAt: formatDateKey(new Date())
             }

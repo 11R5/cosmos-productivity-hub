@@ -1,123 +1,167 @@
-# 🪐 Cosmos — Productivity Hub
+<div align="center">
+
+<img src="src/assets/icon.png" width="128" alt="Cosmos ikonu" />
+
+# Cosmos — Productivity Hub
 
 **Alışkanlık takibi, Trello tarzı proje panoları ve uzun vadeli analizler: hepsi uzay temalı tek bir masaüstü uygulamasında.**
 
-Cosmos, günlük rutinlerinle projelerini bir araya getirir. Alışkanlıklarını işaretleyebilir, işlerini Kanban panosunda planlayabilir ve aylar öncesine kadar geçmişine bakabilirsin. Hepsi internete ihtiyaç duymadan çalışan tek bir pencerede. Verilerin kendi bilgisayarında kalır.
+[![Build](https://github.com/11R5/cosmos-productivity-hub/actions/workflows/build.yml/badge.svg)](https://github.com/11R5/cosmos-productivity-hub/actions/workflows/build.yml)
+[![Release](https://img.shields.io/github/v/release/11R5/cosmos-productivity-hub?include_prereleases&color=8B5CF6)](https://github.com/11R5/cosmos-productivity-hub/releases)
+![Platformlar](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-0EA5E9)
+![Lisans](https://img.shields.io/badge/lisans-Apache%202.0-blue)
 
-> 🇬🇧 [English README](README.md)
+[İndir](https://github.com/11R5/cosmos-productivity-hub/releases) · [Özellikler](#-özellikler) · [Kullanım Kılavuzu](docs/KULLANIM_KILAVUZU.md) · [Kaynaktan derleme](#-kaynaktan-derleme) · [🇬🇧 English](README.md)
+
+<img src="docs/screenshots/01-habits.png" alt="Cosmos alışkanlık takibi" width="900" />
+
+</div>
 
 ---
+
+Cosmos, günlük rutinlerinle projelerini bir araya getirir. Alışkanlıklarını işaretleyebilir, işlerini Kanban panosunda planlayabilir ve bir yıllık geçmişine geri dönüp bakabilirsin. Hepsi tek bir pencerede.
+
+- **Gizli.** Her şey kendi bilgisayarında saklanır. Hesap, sunucu veya veri toplama yok.
+- **İnternetsiz.** Yazı tipleri, ikonlar, stiller ve grafikler uygulamanın içinde gelir. İnternet bağlantısı hiç gerekmez.
+- **Çoklu platform.** Windows, macOS ve Linux sürümleri var.
+
+## 📥 İndir
+
+En güncel sürümü [**Releases sayfasından**](https://github.com/11R5/cosmos-productivity-hub/releases) indirebilirsin.
+
+| Platform | Dosya | Açıklama |
+|---|---|---|
+| **Windows** | `Cosmos-x.y.z-setup.exe` | Başlat menüsü ve masaüstü kısayolu oluşturan kurulum dosyası |
+| | `Cosmos-x.y.z-portable.exe` | Kurulum gerektirmez, USB bellekten bile çalışır |
+| **macOS** | `Cosmos-x.y.z-mac-arm64.dmg` | Apple Silicon (M1/M2/M3/M4) |
+| | `Cosmos-x.y.z-mac-x64.dmg` | Intel işlemcili Mac'ler |
+| **Linux** | `Cosmos-x.y.z-linux-x86_64.AppImage` | Çoğu dağıtımda çalışır |
+| | `Cosmos-x.y.z-linux-amd64.deb` | Debian / Ubuntu / Mint |
+
+> **Dosyalar henüz dijital olarak imzalı değil.** Küçük açık kaynak projelerde bu normaldir, ancak uygulamayı ilk açtığında bir uyarı görürsün:
+> - **Windows SmartScreen:** **Ek bilgi**'ye, ardından **Yine de çalıştır**'a tıkla.
+> - **macOS:** Uygulamaya sağ tıklayıp **Aç**'ı seç ve onayla. "Hasarlı" uyarısı alırsan Terminal'de `xattr -cr /Applications/Cosmos.app` komutunu çalıştır.
+> - **Linux AppImage:** Önce `chmod +x Cosmos-*.AppImage` komutuyla dosyayı çalıştırılabilir yap, sonra aç.
 
 ## ✨ Özellikler
 
 ### 🔁 Alışkanlık Takibi
-- **Haftalık işaretleme tablosu.** Her alışkanlığı her gün için tek tıkla işaretleyebilirsin.
-- **Alışkanlığa özel gün planı.** Her alışkanlığın haftanın hangi günleri tekrar edeceğini seçebilirsin (ör. Pzt/Çar/Cum). *Her gün*, *Hafta içi* ve *Hafta sonu* kısayolları da var.
-- **Akıllı seri (streak).** Plan dışı günler seriyi bozmaz. Bugünü henüz işaretlemediysen dünkü serin sıfırlanmaz.
-- **Zaman yolculuğu.** Geçmiş ve gelecek haftalara gidip düzenleme yapabilirsin. *Bugüne Dön* butonu seni içinde bulunduğun haftaya geri getirir.
-- **Seri liderliği** ve 🔥 rozetleri.
-- **Özel kategoriler.** İstediğin kadar kategori ekleyip silebilirsin.
-- **Sınırsız renk.** Neon paletten veya renk seçiciden seçebilir ya da doğrudan `#RRGGBB` HEX kodu yazabilirsin.
-- **3D haftalık grafik.** Sütun ve dalga görünümleri arasında geçiş yapabilirsin.
+
+| | |
+|---|---|
+| **Haftalık işaretleme tablosu** | Her alışkanlığı her gün için tek tıkla işaretleyebilirsin. Bugünün sütunu vurgulanır. |
+| **Alışkanlığa özel gün planı** | Her alışkanlığın haftanın hangi günleri tekrar edeceğini seçebilirsin (ör. *Pzt, Çar, Cum*). *Her Gün*, *Hafta İçi* ve *Hafta Sonu* kısayolları var. Plan dışı günler soluk görünür. |
+| **Akıllı seri (streak)** | Plan dışı günler seriyi bozmaz. Bugünü henüz işaretlemediysen gün bitmeden serin sıfırlanmaz. |
+| **Zaman yolculuğu** | `‹` / `›` oklarıyla geçmiş veya gelecek haftalara gidip unuttuğun günleri işaretleyebilirsin. **Bugüne Dön** seni içinde bulunduğun haftaya geri getirir. |
+| **Özet kartlar** | Bugünkü ilerleme, haftalık başarı oranı, en güçlü aktif seri ve Kanban özeti. |
+| **Seri liderliği** | Alışkanlıklar güncel serilerine göre 🔥 rozetleriyle sıralanır. Her birinin toplam kaç gün tamamlandığı da görünür. |
+| **3D haftalık grafik** | Seçili haftanın günlük tamamlama oranını 3D sütun veya neon dalga olarak gösterir. |
+| **Kategoriler ve filtre** | Kategori ekleyip silebilir, tabloyu kategoriye göre süzebilirsin. |
+| **Sınırsız renk** | Neon paletten veya renk seçiciden seçebilir ya da doğrudan `#RRGGBB` HEX kodu yazabilirsin. |
+
+<img src="docs/screenshots/04-habit-editor.png" alt="Rutin düzenleme" width="100%" />
 
 ### 📋 Projeler & Kanban
-- **Birden fazla proje.** Her projenin kendi rengi, kart sayısı ve tamamlanma yüzdesi var.
-- **Üç sütun: TODO → IN PROGRESS → DONE.** Kartları sürükle-bırak ile veya hızlı taşıma butonlarıyla taşıyabilirsin.
-- **Trello tarzı kartlar:**
-  - kapak rengi
-  - çok renkli etiketler
-  - **isteğe bağlı alt görev listesi (checklist)** ve canlı ilerleme çubuğu (ör. `2/3 · %67`)
+
+<img src="docs/screenshots/02-kanban.png" alt="Kanban panosu" width="100%" />
+
+| | |
+|---|---|
+| **Birden fazla proje** | Her projenin kendi rengi ve kendi panosu var. Sekmelerde her projenin kart sayısı görünür. |
+| **Üç sütun** | **TODO → IN PROGRESS → DONE**. Kartları sürükle-bırak ile veya kart üzerindeki hızlı butonlarla taşıyabilirsin. |
+| **Proje istatistikleri** | Tamamlanma yüzdesi, süren işler ve projedeki tüm alt görevlerin ilerlemesi. |
+| **Zengin kartlar** | Her kartta başlık, notlar, kapak rengi ve istediğin kadar renkli etiket olabilir. |
+| **İsteğe bağlı alt liste** | Herhangi bir karta alt görevler ekleyip onları doğrudan pano üzerinde işaretleyebilirsin. İlerleme çubuğu anında güncellenir (ör. `2/4 · %50`). |
+
+<img src="docs/screenshots/05-card-editor.png" alt="Kart düzenleme" width="100%" />
 
 ### 📊 Raporlar & Analiz
-- **Aylık disiplin eğrisi.** Seçtiğin ayın gün gün tamamlama oranını gösterir.
-- **Kategori dengesi radar grafiği.** Hayatının hangi alanlarına daha çok emek verdiğini gösterir.
-- **Aylık alışkanlık karnesi.** Her alışkanlık için planlanan ve tamamlanan gün sayısını gösterir.
-- **Kanban raporu.** Tüm projelerdeki TODO / IN PROGRESS / DONE dağılımını gösterir.
-- **Yıllık aktivite ısı haritası.** Son 52 haftayı GitHub tarzı bir tabloda gösterir.
 
-### 🔒 Gizlilik & Veri
-- **%100 yerel.** Hesap, sunucu veya veri toplama yok.
-- **Tek tıkla JSON yedekleme ve geri yükleme.** Verilerini başka bir bilgisayara taşıyabilir veya güvenlik kopyası tutabilirsin.
-- **v1 verisi ve v1 yedeklerinden otomatik geçiş.**
+<img src="docs/screenshots/03-reports.png" alt="Raporlar" width="100%" />
 
-### 🌌 Arayüz
-- Canlı yıldız alanı animasyonu ve nebula arka planı.
-- Neon vurgulu cam (glassmorphism) paneller.
-- Üzerine gelince düzleşen 3D perspektifli grafik kartları.
+| | |
+|---|---|
+| **Ay seçici** | İstediğin geçmiş ayı inceleyebilirsin. |
+| **Günlük disiplin eğrisi** | Seçili ayın her günü için tamamlama oranı. |
+| **Kategori dengesi radarı** | Hayatının hangi alanlarına daha çok emek verdiğini gösterir. |
+| **Kanban raporu** | Tüm projelerdeki TODO / IN PROGRESS / DONE kart sayıları, yığılmış grafik olarak. |
+| **Aylık karne** | Her alışkanlık için planlanan ve tamamlanan gün sayısı. |
+| **Yıllık aktivite ısı haritası** | Son 52 haftayı (364 gün) gösteren GitHub tarzı tablo. |
 
----
+### 💾 Veri & Yedekleme
+
+- Her değişiklik anında otomatik kaydedilir. Bilgisayarı yeniden başlattığında veya uygulamayı güncellediğinde verilerin kaybolmaz.
+- **Yedek İndir** her şeyi okunabilir bir `cosmos_yedek_YYYY-MM-DD.json` dosyasına aktarır.
+- **Yedek Yükle** bir yedeği geri yükler. Böylece verilerini yeni bir bilgisayara taşıyabilirsin. v1 yedekleri de kabul edilir.
+
+| İşletim sistemi | Veri klasörü |
+|---|---|
+| Windows | `%APPDATA%\aliskanlik-takip-paneli\` |
+| macOS | `~/Library/Application Support/aliskanlik-takip-paneli/` |
+| Linux | `~/.config/aliskanlik-takip-paneli/` |
 
 ## 🛠️ Teknolojiler
 
 | Katman | Teknoloji |
 |---|---|
 | Masaüstü çatısı | Electron 30 |
-| Paketleme | electron-builder 24 |
-| Arayüz | HTML5 + Vanilla JavaScript (tek dosya uygulama) |
-| Stil | Tailwind CSS (CDN), özel CSS (glassmorphism, 3D perspektif) |
-| Grafikler | Chart.js + özel 3D gölge eklentisi |
+| Paketleme | electron-builder (NSIS, portable, DMG, AppImage, deb) |
+| Arayüz | HTML5 + Vanilla JavaScript, `src/index.html` içinde tek sayfalık uygulama |
+| Stil | Tailwind CSS 3 (yerelde derlenir), cam (glassmorphism) ve 3D perspektif için özel CSS |
+| Grafikler | Chart.js 4 + özel 3D gölge eklentisi |
 | İkonlar | Lucide |
-| Yazı tipleri | Space Grotesk, Inter |
+| Yazı tipleri | Inter ve Space Grotesk (Fontsource ile uygulamaya dahil) |
 | Arka plan | HTML5 Canvas yıldız animasyonu |
 | Veri | `localStorage` (diskte Chromium LevelDB) |
+| CI/CD | GitHub Actions üç platformu derler ve sürüm yayınlar |
 
----
+## 🧑‍💻 Kaynaktan derleme
 
-## 🚀 Kurulum
-
-### Kurulumsuz (tarayıcıda)
-[`Cosmos_Aliskanlik_Kanban_v2_Windows/AliskanlikTakip.html`](Cosmos_Aliskanlik_Kanban_v2_Windows/AliskanlikTakip.html) dosyasını herhangi bir tarayıcıda açman yeterli.
-
-> Tarayıcıda açtığında veriler o tarayıcıya kaydedilir. Masaüstü uygulamasının verileriyle ortak değildir.
-
-### Masaüstü uygulaması
-[Node.js](https://nodejs.org/) 18 veya üzeri gerekir.
+[Node.js](https://nodejs.org/) 20 veya üzeri gerekir.
 
 ```bash
 git clone https://github.com/11R5/cosmos-productivity-hub.git
-cd cosmos-productivity-hub/Cosmos_Aliskanlik_Kanban_v2_Windows/electron_project
+cd cosmos-productivity-hub
 npm install
 npm start
 ```
 
-### Windows için taşınabilir `.exe`
+| Komut | Ne yapar |
+|---|---|
+| `npm start` | Uygulamayı geliştirme modunda açar |
+| `npm run build:win` | Windows kurulum dosyasını ve taşınabilir `.exe`'yi `dist/` klasörüne üretir |
+| `npm run build:mac` | Intel ve Apple Silicon için `.dmg` üretir (macOS'ta çalıştırılmalı) |
+| `npm run build:linux` | `.AppImage` ve `.deb` üretir (Linux'ta çalıştırılmalı) |
+| `npm run build:css` | `src/index.html` içinde sınıf değiştirdikten sonra Tailwind'i yeniden derler |
+| `npm run vendor` | Chart.js, Lucide ve fontları `node_modules`'dan `src/vendor/`'a kopyalar |
+| `npm run icon` | `Logo/Logo.jpg`'den PNG uygulama ikonlarını yeniden üretir |
+| `npm run screenshots` | Demo veriyle `docs/screenshots/` görsellerini yeniden üretir (gerçek verine dokunmaz) |
+
+> **Windows ipucu:** Derleme sırasında `Cannot create symbolic link` hatası alırsan terminali Yönetici olarak aç veya **Geliştirici Modu**'nu aç (Ayarlar → Sistem → Geliştiriciler için).
+
+### Yeni sürüm yayınlama
+
+Bir sürüm etiketi göndermen yeterli. GitHub Actions Windows, macOS ve Linux sürümlerini derler ve dosyaları yeni bir GitHub Release'e ekler:
 
 ```bash
-npm run build:win
+git tag v2.1.0
+git push origin v2.1.0
 ```
-
-Oluşan `.exe` dosyasını `electron_project/dist/` klasöründe bulabilirsin.
-
-> **İpucu:** Derleme sırasında `Cannot create symbolic link` hatası alırsan terminali Yönetici olarak aç veya **Geliştirici Modu**'nu aç (Ayarlar → Sistem → Geliştiriciler için).
-
----
-
-## 💾 Verilerim nerede?
-
-| İşletim sistemi | Konum |
-|---|---|
-| Windows | `%APPDATA%\aliskanlik-takip-paneli\` |
-| macOS | `~/Library/Application Support/aliskanlik-takip-paneli/` |
-| Linux | `~/.config/aliskanlik-takip-paneli/` |
-
-Verilerin bilgisayarı yeniden başlatınca, uygulamayı güncelleyince ya da `.exe` dosyasını taşıyıp silince kaybolmaz. Yalnızca bu klasörü silersen veya bilgisayara format atarsan gider. Sağ üstteki **Yedek İndir / Yedek Yükle** butonlarıyla verilerinin taşınabilir bir `.json` kopyasını alabilirsin.
-
----
 
 ## 🗺️ Yol Haritası
 
-- [ ] **macOS (`.dmg`) ve Linux (`AppImage` / `.deb`) sürümleri**
-- [ ] Tailwind, Chart.js ve Lucide'ı projeye dahil ederek **tamamen çevrimdışı** çalışma
-- [ ] Uygulama ikonu ve marka kimliği
-- [ ] GitHub Releases üzerinden indirilebilir kurulum dosyaları
+- [x] Windows, macOS ve Linux sürümleri
+- [x] Tamamen internetsiz çalışma
+- [x] Uygulama ikonu
+- [x] GitHub Actions ile otomatik sürüm yayınlama
 - [ ] İngilizce dil desteği
 - [ ] Otomatik güncelleme
-- [ ] Dosya tabanlı kalıcı veri ve otomatik yedekleme
+- [ ] Windows ve macOS için dijital imza
+- [ ] Dosya tabanlı veri ve otomatik yedekleme
+- [ ] Hatırlatıcılar ve bildirimler
 
-Öneri ve isteklerini [issue](https://github.com/11R5/cosmos-productivity-hub/issues) olarak açabilirsin.
-
----
+Bir fikrin mi var? [Issue aç](https://github.com/11R5/cosmos-productivity-hub/issues).
 
 ## 📄 Lisans
 
-[Apache License 2.0](LICENSE)
+[Apache License 2.0](LICENSE). Uygulamaya dahil edilen üçüncü parti kütüphaneler kendi lisanslarına (MIT / ISC / OFL) tabidir.
