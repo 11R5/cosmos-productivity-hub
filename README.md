@@ -227,6 +227,7 @@ git push origin vX.Y.Z
 | [User Guide](docs/USER_GUIDE.md) | English | How to use every screen |
 | [Kullanım Kılavuzu](docs/KULLANIM_KILAVUZU.md) | Turkish | The same guide in Turkish |
 | [Project Plan](docs/PROJE_PLANI.md) | Turkish | Vision, scope, roadmap, distribution, risks |
+| [Sync Plan](docs/SENKRONIZASYON_PLANI.md) | Turkish | Work plan for free cloud / LAN / Tailscale sync (draft) |
 | [Technical Documentation](docs/TEKNIK_DOKUMAN.md) | Turkish | Architecture, data model, render cycle, security, build, tests |
 | [Workflows](docs/IS_AKISLARI.md) | Turkish | User flows, development, release and bug-tracking workflows (with diagrams) |
 | [Known Issues](docs/BILINEN_SORUNLAR.md) | Turkish | Bug log: what was fixed and what is still open |
@@ -241,6 +242,7 @@ git push origin vX.Y.Z
 - [x] End-to-end smoke test in CI
 - [ ] Upgrade to a supported Electron version
 - [ ] File-based storage with automatic backups
+- [ ] **Free, serverless sync between computers**: via a synced folder (Google Drive for Desktop, OneDrive, Dropbox, iCloud, Syncthing), the Google Drive API, and local network / Tailscale peer-to-peer. See the [Sync Plan](docs/SENKRONIZASYON_PLANI.md)
 - [ ] English localization (i18n)
 - [ ] Reminders and notifications
 - [ ] Automatic updates

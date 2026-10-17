@@ -209,6 +209,7 @@ GitHub Actions testleri çalıştırır, Windows, macOS ve Linux sürümlerini d
 |---|---|
 | [Kullanım Kılavuzu](docs/KULLANIM_KILAVUZU.md) | Her ekranın adım adım kullanımı |
 | [Proje Planı](docs/PROJE_PLANI.md) | Vizyon, kapsam, yol haritası, dağıtım, riskler |
+| [Senkronizasyon Planı](docs/SENKRONIZASYON_PLANI.md) | Ücretsiz bulut / yerel ağ / Tailscale senkronizasyonu iş planı (taslak) |
 | [Teknik Doküman](docs/TEKNIK_DOKUMAN.md) | Mimari, veri modeli, çizim döngüsü, güvenlik, derleme, testler |
 | [İş Akışları](docs/IS_AKISLARI.md) | Kullanıcı, geliştirme, sürüm yayınlama ve hata takibi akışları (diyagramlı) |
 | [Bilinen Sorunlar](docs/BILINEN_SORUNLAR.md) | Hata kaydı: düzeltilenler ve açık olanlar |
@@ -224,6 +225,7 @@ GitHub Actions testleri çalıştırır, Windows, macOS ve Linux sürümlerini d
 - [x] CI'da uçtan uca duman testi
 - [ ] Desteklenen bir Electron sürümüne geçiş
 - [ ] Dosya tabanlı veri ve otomatik yedekleme
+- [ ] **Ücretsiz, sunucusuz cihazlar arası senkronizasyon**: senkron klasörü (Google Drive for Desktop, OneDrive, Dropbox, iCloud, Syncthing), Google Drive API ve yerel ağ / Tailscale P2P. Bkz. [Senkronizasyon Planı](docs/SENKRONIZASYON_PLANI.md)
 - [ ] İngilizce dil desteği
 - [ ] Hatırlatıcılar ve bildirimler
 - [ ] Otomatik güncelleme

@@ -2,6 +2,11 @@
 
 All notable changes to Cosmos are listed here. Versions follow [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Planned
+- Free, serverless sync between computers: synced folder (Google Drive for Desktop, OneDrive, Dropbox, iCloud, Syncthing), Google Drive API, and local network / Tailscale peer-to-peer. See `docs/SENKRONIZASYON_PLANI.md`.
+
 ## [2.1.1] — 2026-10-17
 
 ### Fixed

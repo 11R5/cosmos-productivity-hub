@@ -1,13 +1,13 @@
 # Cosmos — Proje Planı
 
-> İlgili belgeler: [Teknik Doküman](TEKNIK_DOKUMAN.md) · [İş Akışları](IS_AKISLARI.md) · [Bilinen Sorunlar](BILINEN_SORUNLAR.md) · [Değişiklik Günlüğü](../CHANGELOG.md)
+> İlgili belgeler: [Senkronizasyon Planı](SENKRONIZASYON_PLANI.md) · [Teknik Doküman](TEKNIK_DOKUMAN.md) · [İş Akışları](IS_AKISLARI.md) · [Bilinen Sorunlar](BILINEN_SORUNLAR.md) · [Değişiklik Günlüğü](../CHANGELOG.md)
 
 ## 1. Vizyon
 
 Cosmos; alışkanlık takibini, proje/görev yönetimini ve kişisel analizleri **tek bir masaüstü uygulamasında** birleştirir. Uygulama hesap gerektirmez ve **tamamen çevrimdışı** çalışır.
 
 Temel ilkeler:
-1. **Gizlilik önce gelir.** Veri kullanıcının bilgisayarından çıkmaz; bulut yok, veri toplama yok.
+1. **Gizlilik önce gelir.** Veri toplama yok. Senkronizasyon yalnızca kullanıcının kendi cihazları veya kendi bulut hesabı üzerinden yapılır; Cosmos sunucusu yok.
 2. **Sade ve hızlı.** Kurulumdan sonra ilk alışkanlığı eklemek bir dakikadan az sürmeli.
 3. **Keyifli arayüz.** Uzay teması, motivasyonu artıran bir deneyim sunar.
 4. **Açık kaynak.** Apache 2.0 lisanslı; herkes katkı verebilir.
@@ -23,9 +23,10 @@ Temel ilkeler:
 | Kapsamda | Kapsam dışında (şimdilik) |
 |---|---|
 | Alışkanlık takibi, seriler, gün planı | Çok kullanıcılı ekip çalışması |
-| Proje + Kanban (TODO / IN PROGRESS / DONE) | Bulut senkronizasyonu (ileride isteğe bağlı) |
+| Proje + Kanban (TODO / IN PROGRESS / DONE) | Cosmos tarafından işletilen bir bulut sunucusu |
 | Aylık/yıllık raporlar, ısı haritası | Mobil uygulama (v3.0 değerlendirmesi) |
 | JSON yedekleme ve geri yükleme | Takvim entegrasyonları |
+| Ücretsiz, sunucusuz cihazlar arası senkronizasyon (planlandı: v2.4–v2.7) | |
 | Windows, macOS, Linux | Web (SaaS) sürümü |
 
 ## 4. Sürüm geçmişi
@@ -39,21 +40,44 @@ Temel ilkeler:
 
 ## 5. Yol haritası
 
-### v2.2 — Sağlamlık ve güvenlik
+> 🔄 **Öncelikli hedef: ücretsiz, sunucusuz senkronizasyon.** Ayrıntılı iş planı [SENKRONIZASYON_PLANI.md](SENKRONIZASYON_PLANI.md) dosyasında. Aşağıdaki sürümler bu plana göre sıralandı.
+
+### v2.2 — Sağlamlık ve güvenlik (senkron Faz 0)
 - [ ] Electron'u desteklenen bir sürüme yükseltmek (A1)
 - [ ] electron-builder'ı güncellemek ve `npm audit` uyarılarını temizlemek (A9)
+- [ ] **Preload + IPC köprüsü** (`contextBridge`): dosya ve ağ işlerini ana süreç yapacak
 - [ ] Alışkanlıklara `createdAt` alanı eklemek; raporlarda oluşturulma öncesini saymamak (A3)
 - [ ] Gün değişiminde otomatik yenileme (A7)
 - [ ] Inline `onclick` yerine olay dinleyicileri; daha sıkı CSP (A8)
 - [ ] Testleri macOS ve Linux CI'da da çalıştırmak
 
-### v2.3 — Veri güvenliği
+### v2.3 — Veri katmanı (senkron Faz 1–2)
 - [ ] Dosya tabanlı kayıt: `userData/cosmos-data.json`
-- [ ] Günlük otomatik yedek; son 7 yedeğin saklanması
-- [ ] "Yedek klasörünü aç" ve "otomatik yedekten geri yükle" seçenekleri
 - [ ] Veri şeması sürüm numarası (`schemaVersion`) ve geçiş (migration) altyapısı
+- [ ] UUID kimlikler, kayıt bazında `updatedAt`, silme işaretleri (`deletedAt`), `deviceId`
+- [ ] Alışkanlık geçmişinde gün bazında zaman damgası
+- [ ] Otomatik yerel yedek (son 7), "yedek klasörünü aç" ve "otomatik yedekten geri yükle"
+- [ ] `merge()` birleştirme motoru ve çakışma senaryosu testleri
 
-### v2.4 — Kullanım kolaylığı
+### v2.4 — Senkron klasörü (senkron Faz 3) ☁️
+- [ ] **Google Drive for Desktop / OneDrive / Dropbox / iCloud Drive / Syncthing** klasörüyle senkronizasyon
+- [ ] Her cihazın kendi dosyası (`devices/<deviceId>.json`), atomik yazma, değişiklik izleme
+- [ ] **Ayarlar → Senkronizasyon** ekranı, cihaz listesi, "Şimdi eşitle", üst çubukta durum ikonu
+
+### v2.5 — Google Drive API (senkron Faz 4) ☁️
+- [ ] "Google ile bağlan" (OAuth + PKCE), Drive `appDataFolder`, token için `safeStorage`
+- [ ] Google OAuth doğrulama sürecinin araştırılması ve yürütülmesi
+
+### v2.6 — Yerel ağ ve Tailscale P2P (senkron Faz 5) 🔗
+- [ ] Aynı ağdaki cihazları mDNS ile otomatik bulma
+- [ ] Tailscale (MagicDNS / `100.x`) üzerinden uzaktaki cihazlarla doğrudan eşitleme
+- [ ] Eşleştirme kodu veya QR, şifreli bağlantı, varsayılan olarak kapalı
+
+### v2.7 — Senkron cilası (senkron Faz 6)
+- [ ] İsteğe bağlı uçtan uca şifreleme (parola ile AES-GCM)
+- [ ] Senkron geçmişi ve çakışma kayıtları ekranı ("geri al")
+
+### v2.8 — Kullanım kolaylığı
 - [ ] İngilizce arayüz (i18n altyapısı) (A10)
 - [ ] Karta son tarih (due date) ve öncelik ekleme
 - [ ] Alışkanlık hatırlatıcıları (masaüstü bildirimi)
@@ -65,8 +89,7 @@ Temel ilkeler:
 - [ ] Otomatik güncelleme (electron-updater + GitHub Releases)
 - [ ] Windows ve macOS için kod imzalama (A2)
 - [ ] Microsoft Store / Mac App Store / Flathub / Snap dağıtımı
-- [ ] İsteğe bağlı, uçtan uca şifreli senkronizasyon (değerlendirme)
-- [ ] Mobil eşlik uygulaması (değerlendirme)
+- [ ] Mobil eşlik uygulaması (aynı senkron protokolüyle; değerlendirme)
 
 ## 6. Dağıtım planı
 
