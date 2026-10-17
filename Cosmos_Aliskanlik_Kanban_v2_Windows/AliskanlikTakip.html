@@ -1,0 +1,2131 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>COSMOS // Alışkanlık & Proje Üssü v2.0</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap');
+
+    :root {
+      --bg-deep: #050711;
+      --neon-cyan: #00f2fe;
+      --neon-purple: #8b5cf6;
+      --neon-pink: #ec4899;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg-deep);
+      color: #e2e8f0;
+      overflow-x: hidden;
+      user-select: none;
+    }
+
+    h1, h2, h3, .font-space {
+      font-family: 'Space Grotesk', sans-serif;
+    }
+
+    /* Animated Starfield Background */
+    #starfield {
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      z-index: -2;
+      pointer-events: none;
+    }
+
+    .nebula-glow {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 15% 20%, rgba(99, 102, 241, 0.14) 0%, transparent 45%),
+        radial-gradient(circle at 85% 25%, rgba(236, 72, 153, 0.11) 0%, transparent 45%),
+        radial-gradient(circle at 50% 85%, rgba(6, 182, 212, 0.12) 0%, transparent 50%);
+    }
+
+    /* Glassmorphism & 3D Perspective Cards */
+    .space-card {
+      background: rgba(11, 16, 33, 0.72);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(99, 102, 241, 0.22);
+      box-shadow: 0 12px 35px -8px rgba(0, 0, 0, 0.7), inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .space-card:hover {
+      border-color: rgba(99, 102, 241, 0.42);
+    }
+
+    .chart-3d-wrap {
+      perspective: 1200px;
+    }
+    .chart-3d-inner {
+      transform: rotateX(8deg) rotateY(-2deg);
+      transform-style: preserve-3d;
+      transition: transform 0.4s ease;
+      box-shadow: 0 22px 45px -12px rgba(99, 102, 241, 0.25);
+    }
+    .chart-3d-inner:hover {
+      transform: rotateX(0deg) rotateY(0deg);
+    }
+
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar { width: 7px; height: 7px; }
+    ::-webkit-scrollbar-track { background: #070a17; }
+    ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 9999px; border: 1px solid rgba(99,102,241,0.3); }
+    ::-webkit-scrollbar-thumb:hover { background: #334155; }
+
+    /* Drag & Drop Kanban styles */
+    .kanban-card {
+      cursor: grab;
+      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+    }
+    .kanban-card:active { cursor: grabbing; }
+    .kanban-card.dragging {
+      opacity: 0.45;
+      transform: scale(0.96) rotate(2deg);
+    }
+    .kanban-dropzone.drag-over {
+      background: rgba(99, 102, 241, 0.12);
+      border-color: rgba(99, 102, 241, 0.65);
+    }
+
+    /* Heatmap grid cell */
+    .heat-cell {
+      width: 13px;
+      height: 13px;
+      border-radius: 3px;
+      transition: transform 0.15s ease;
+    }
+    .heat-cell:hover {
+      transform: scale(1.45);
+      z-index: 20;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- Animated Space Starfield -->
+  <canvas id="starfield"></canvas>
+  <div class="nebula-glow"></div>
+
+  <!-- Top Navigation Header -->
+  <header class="sticky top-0 z-40 border-b border-indigo-500/20 bg-[#070b19]/80 backdrop-blur-xl px-6 py-3.5 flex flex-wrap items-center justify-between gap-4">
+    <div class="flex items-center gap-3.5">
+      <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-indigo-600 via-violet-600 to-cyan-500 flex items-center justify-center shadow-lg shadow-indigo-500/30 ring-1 ring-white/20">
+        <i data-lucide="orbit" class="w-6 h-6 text-white"></i>
+      </div>
+      <div>
+        <div class="flex items-center gap-2.5">
+          <h1 class="text-xl font-bold tracking-wider text-white font-space">COSMOS</h1>
+          <span class="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/30">v2.0 UZAY ÜSSÜ</span>
+        </div>
+        <p class="text-xs text-slate-400">Alışkanlık Telemetrisi, Geçmiş Arşivi & Trello/Kanban Görev Komuta Merkezi</p>
+      </div>
+    </div>
+
+    <!-- Main Module Tabs -->
+    <div class="flex items-center gap-1.5 bg-slate-900/90 p-1.5 rounded-2xl border border-indigo-500/25 shadow-inner">
+      <button onclick="switchTab('habits')" id="tab-habits" class="px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-lg shadow-indigo-600/30">
+        <i data-lucide="calendar-check-2" class="w-4 h-4"></i> Alışkanlık Üssü
+      </button>
+      <button onclick="switchTab('kanban')" id="tab-kanban" class="px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition text-slate-400 hover:text-white">
+        <i data-lucide="kanban" class="w-4 h-4"></i> Proje & Kanban Board
+      </button>
+      <button onclick="switchTab('reports')" id="tab-reports" class="px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition text-slate-400 hover:text-white">
+        <i data-lucide="radar" class="w-4 h-4"></i> Aylık / Yıllık Rapor & 3D Analiz
+      </button>
+    </div>
+
+    <!-- Backup & Quick Actions -->
+    <div class="flex items-center gap-2">
+      <button onclick="exportAllData()" class="px-3 py-2 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-slate-300 text-xs font-medium flex items-center gap-1.5 border border-slate-700/80 transition" title="Tüm Alışkanlık ve Kanban Verilerini İndir">
+        <i data-lucide="download-cloud" class="w-4 h-4 text-cyan-400"></i> Yedek İndir
+      </button>
+      <label class="px-3 py-2 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-slate-300 text-xs font-medium flex items-center gap-1.5 border border-slate-700/80 transition cursor-pointer" title="JSON Yedeğini Geri Yükle">
+        <i data-lucide="upload-cloud" class="w-4 h-4 text-violet-400"></i> Yedek Yükle
+        <input type="file" accept=".json" class="hidden" onchange="importAllData(event)" />
+      </label>
+    </div>
+  </header>
+
+  <!-- ========================================================================= -->
+  <!-- TAB 1: HABIT TRACKER (ALIŞKANLIK ÜSSÜ)                                    -->
+  <!-- ========================================================================= -->
+  <main id="view-habits" class="flex-1 max-w-[1440px] w-full mx-auto p-6 space-y-6">
+
+    <!-- Top Action & Week Time-Travel Bar -->
+    <div class="space-card rounded-2xl p-4 flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <button onclick="shiftWeek(-1)" class="p-2 rounded-xl bg-slate-800/80 hover:bg-indigo-600/30 text-slate-200 border border-slate-700 transition" title="Önceki Hafta">
+          <i data-lucide="chevron-left" class="w-5 h-5"></i>
+        </button>
+        <div class="text-center min-w-[230px]">
+          <div class="text-xs font-semibold uppercase tracking-widest text-cyan-400" id="week-badge">AKTİF HAFTA</div>
+          <div class="text-sm font-bold text-white mt-0.5" id="week-range-label">--</div>
+        </div>
+        <button onclick="shiftWeek(1)" class="p-2 rounded-xl bg-slate-800/80 hover:bg-indigo-600/30 text-slate-200 border border-slate-700 transition" title="Sonraki Hafta">
+          <i data-lucide="chevron-right" class="w-5 h-5"></i>
+        </button>
+        <button onclick="goToCurrentWeek()" class="px-3 py-1.5 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-xs font-semibold transition">
+          Bugüne Dön
+        </button>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2.5">
+        <select id="habitCategoryFilter" onchange="renderAll()" class="bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-cyan-400"></select>
+        <button onclick="openCategoryModal()" class="px-3.5 py-2.5 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1.5 border border-slate-700 transition">
+          <i data-lucide="tags" class="w-4 h-4 text-pink-400"></i> Kategorileri Yönet
+        </button>
+        <button onclick="openHabitModal()" class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-cyan-500/20 transition">
+          <i data-lucide="plus-circle" class="w-4 h-4"></i> Yeni Rutin / Hedef Ekle
+        </button>
+      </div>
+    </div>
+
+    <!-- KPI Telemetry Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="space-card rounded-2xl p-5 flex items-center justify-between">
+        <div>
+          <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Bugünkü Görev İlerlemesi</p>
+          <div class="flex items-baseline gap-2.5 mt-1.5">
+            <h2 id="kpi-today" class="text-3xl font-extrabold text-white font-space">0/0</h2>
+            <span id="kpi-today-pct" class="text-xs font-bold px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-400">%0</span>
+          </div>
+          <p class="text-[11px] text-slate-400 mt-1">Bugün planlanan rutinler</p>
+        </div>
+        <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shadow-lg shadow-emerald-500/10">
+          <i data-lucide="check-circle-2" class="w-6 h-6"></i>
+        </div>
+      </div>
+
+      <div class="space-card rounded-2xl p-5 flex items-center justify-between">
+        <div>
+          <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Seçili Hafta Başarısı</p>
+          <div class="flex items-baseline gap-2 mt-1.5">
+            <h2 id="kpi-week-pct" class="text-3xl font-extrabold text-cyan-400 font-space">%0</h2>
+            <span id="kpi-week-fraction" class="text-xs text-slate-400">(0/0)</span>
+          </div>
+          <p class="text-[11px] text-slate-400 mt-1">Planlanan günlere oranla</p>
+        </div>
+        <div class="w-12 h-12 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shadow-lg shadow-cyan-500/10">
+          <i data-lucide="activity" class="w-6 h-6"></i>
+        </div>
+      </div>
+
+      <div class="space-card rounded-2xl p-5 flex items-center justify-between">
+        <div>
+          <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">En Güçlü Aktif Seri</p>
+          <div class="flex items-baseline gap-2 mt-1.5">
+            <h2 id="kpi-best-streak" class="text-3xl font-extrabold text-amber-400 font-space">0 Gün</h2>
+          </div>
+          <p class="text-[11px] text-slate-400 mt-1" id="kpi-best-streak-name">Kesintisiz zincir</p>
+        </div>
+        <div class="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shadow-lg shadow-amber-500/10">
+          <i data-lucide="flame" class="w-6 h-6"></i>
+        </div>
+      </div>
+
+      <div class="space-card rounded-2xl p-5 flex items-center justify-between">
+        <div>
+          <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Kanban & Proje Durumu</p>
+          <div class="flex items-baseline gap-2 mt-1.5">
+            <h2 id="kpi-kanban-done" class="text-3xl font-extrabold text-violet-400 font-space">0/0</h2>
+            <span class="text-xs text-slate-400">kart bitti</span>
+          </div>
+          <p class="text-[11px] text-slate-400 mt-1">Tüm aktif projeler</p>
+        </div>
+        <div class="w-12 h-12 rounded-2xl bg-violet-500/10 border border-violet-500/30 flex items-center justify-center text-violet-400 shadow-lg shadow-violet-500/10">
+          <i data-lucide="layers" class="w-6 h-6"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3D Weekly Chart + Streak Leaderboard -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div class="lg:col-span-2 chart-3d-wrap">
+        <div class="space-card chart-3d-inner rounded-2xl p-6 flex flex-col justify-between h-full">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+            <div>
+              <h3 class="text-base font-bold text-white flex items-center gap-2">
+                <i data-lucide="sparkles" class="w-5 h-5 text-cyan-400"></i>
+                Haftalık Yörünge & Tamamlama Grafiği (3D Perspektif)
+              </h3>
+              <p class="text-xs text-slate-400">Seçili haftadaki günlük planlanan hedeflerin gerçekleşme oranı (%)</p>
+            </div>
+            <div class="flex items-center gap-1 bg-slate-900/90 p-1 rounded-xl border border-slate-700/80">
+              <button id="btn-chart-bar" onclick="setWeeklyChartType('bar')" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white transition">3D Sütun</button>
+              <button id="btn-chart-line" onclick="setWeeklyChartType('line')" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition">Neon Dalga</button>
+            </div>
+          </div>
+          <div class="relative h-64 w-full">
+            <canvas id="weeklyChartCanvas"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Streak Leaderboard -->
+      <div class="space-card rounded-2xl p-6 flex flex-col">
+        <div class="mb-4 flex items-center justify-between">
+          <div>
+            <h3 class="text-base font-bold text-white flex items-center gap-2">
+              <i data-lucide="trophy" class="w-5 h-5 text-amber-400"></i>
+              Seri Liderliği (Streak)
+            </h3>
+            <p class="text-xs text-slate-400">Seçili günlere göre kesintisiz seri rekorları</p>
+          </div>
+        </div>
+        <div id="streak-leaderboard" class="flex-1 space-y-2.5 overflow-y-auto max-h-64 pr-1"></div>
+      </div>
+    </div>
+
+    <!-- Weekly Habit Check-in Matrix -->
+    <div class="space-card rounded-2xl p-6">
+      <div class="flex flex-wrap items-center justify-between gap-4 mb-5">
+        <div>
+          <h3 class="text-base font-bold text-white flex items-center gap-2">
+            <i data-lucide="check-square" class="w-5 h-5 text-emerald-400"></i>
+            Haftalık Rutin Komuta Çizelgesi
+          </h3>
+          <p class="text-xs text-slate-400">Sadece o alışkanlık için seçtiğiniz aktif günlerdeki kutucuklar vurgulanır. Geçmiş haftalara gidip geriye dönük işaretleme yapabilirsiniz.</p>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr id="habit-table-head" class="border-b border-slate-800 text-xs font-semibold text-slate-400 uppercase"></tr>
+          </thead>
+          <tbody id="habit-table-body" class="divide-y divide-slate-800/60 text-sm"></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- ========================================================================= -->
+  <!-- TAB 2: KANBAN & PROJECT MANAGEMENT (TRELLO TARZI KOMUTA MERKEZİ)          -->
+  <!-- ========================================================================= -->
+  <main id="view-kanban" class="hidden flex-1 max-w-[1440px] w-full mx-auto p-6 space-y-6">
+
+    <!-- Project Selector & Controls Bar -->
+    <div class="space-card rounded-2xl p-4 flex flex-wrap items-center justify-between gap-4">
+      <div class="flex flex-wrap items-center gap-2" id="project-tabs-container">
+        <!-- Populated by JS -->
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2.5">
+        <button onclick="openProjectModal()" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-cyan-500/30 text-xs font-bold flex items-center gap-1.5 transition">
+          <i data-lucide="folder-plus" class="w-4 h-4"></i> Yeni Proje Ekle
+        </button>
+        <button onclick="deleteCurrentProject()" class="px-3 py-2 rounded-xl bg-slate-900 hover:bg-rose-950/60 text-slate-400 hover:text-rose-300 border border-slate-800 text-xs font-semibold flex items-center gap-1.5 transition" title="Seçili Projeyi Sil">
+          <i data-lucide="trash-2" class="w-4 h-4"></i> Projeyi Sil
+        </button>
+        <button onclick="openKanbanCardModal('todo')" class="px-4 py-2 rounded-xl bg-gradient-to-r from-violet-600 to-pink-600 hover:from-violet-500 hover:to-pink-500 text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-pink-600/20 transition">
+          <i data-lucide="plus" class="w-4 h-4"></i> Yeni Görev Kartı Ekle
+        </button>
+      </div>
+    </div>
+
+    <!-- Project Mini Telemetry -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4" id="kanban-project-stats"></div>
+
+    <!-- 3 Columns: TODO / IN PROGRESS / DONE -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+
+      <!-- TODO COLUMN -->
+      <div class="space-card rounded-2xl p-4 flex flex-col border-t-4 border-t-amber-400">
+        <div class="flex items-center justify-between mb-4 px-1">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse"></span>
+            <h3 class="text-sm font-bold tracking-wider uppercase text-white font-space">TODO // YAPILACAKLAR</h3>
+            <span id="count-todo" class="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300">0</span>
+          </div>
+          <button onclick="openKanbanCardModal('todo')" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition" title="Kart Ekle">
+            <i data-lucide="plus" class="w-4 h-4"></i>
+          </button>
+        </div>
+        <div id="col-todo"
+             ondragover="allowDrop(event)"
+             ondragleave="leaveDrop(event)"
+             ondrop="dropCard(event, 'todo')"
+             class="kanban-dropzone min-h-[420px] space-y-3 p-1.5 rounded-xl border border-transparent transition">
+        </div>
+      </div>
+
+      <!-- IN PROGRESS COLUMN -->
+      <div class="space-card rounded-2xl p-4 flex flex-col border-t-4 border-t-cyan-400">
+        <div class="flex items-center justify-between mb-4 px-1">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse"></span>
+            <h3 class="text-sm font-bold tracking-wider uppercase text-white font-space">IN PROGRESS // SÜRÜYOR</h3>
+            <span id="count-inprogress" class="text-xs font-bold px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300">0</span>
+          </div>
+          <button onclick="openKanbanCardModal('inprogress')" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition" title="Kart Ekle">
+            <i data-lucide="plus" class="w-4 h-4"></i>
+          </button>
+        </div>
+        <div id="col-inprogress"
+             ondragover="allowDrop(event)"
+             ondragleave="leaveDrop(event)"
+             ondrop="dropCard(event, 'inprogress')"
+             class="kanban-dropzone min-h-[420px] space-y-3 p-1.5 rounded-xl border border-transparent transition">
+        </div>
+      </div>
+
+      <!-- DONE COLUMN -->
+      <div class="space-card rounded-2xl p-4 flex flex-col border-t-4 border-t-emerald-400">
+        <div class="flex items-center justify-between mb-4 px-1">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+            <h3 class="text-sm font-bold tracking-wider uppercase text-white font-space">DONE // TAMAMLANDI</h3>
+            <span id="count-done" class="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300">0</span>
+          </div>
+          <button onclick="openKanbanCardModal('done')" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition" title="Kart Ekle">
+            <i data-lucide="plus" class="w-4 h-4"></i>
+          </button>
+        </div>
+        <div id="col-done"
+             ondragover="allowDrop(event)"
+             ondragleave="leaveDrop(event)"
+             ondrop="dropCard(event, 'done')"
+             class="kanban-dropzone min-h-[420px] space-y-3 p-1.5 rounded-xl border border-transparent transition">
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- ========================================================================= -->
+  <!-- TAB 3: REPORTS & RETROSPECTIVE ANALYTICS (AYLIK / YILLIK RAPORLAR)         -->
+  <!-- ========================================================================= -->
+  <main id="view-reports" class="hidden flex-1 max-w-[1440px] w-full mx-auto p-6 space-y-6">
+
+    <!-- Filter Header -->
+    <div class="space-card rounded-2xl p-4 flex flex-wrap items-center justify-between gap-4">
+      <div>
+        <h2 class="text-lg font-bold text-white flex items-center gap-2 font-space">
+          <i data-lucide="telescope" class="w-5 h-5 text-cyan-400"></i>
+          Aylık, Yıllık ve Geriye Dönük Uzay Telemetri Raporu
+        </h2>
+        <p class="text-xs text-slate-400">Alışkanlık disiplin geçmişiniz, yıllık ısı haritanız ve proje/Kanban üretkenlik metrikleriniz</p>
+      </div>
+      <div class="flex items-center gap-3">
+        <label class="text-xs text-slate-400 font-semibold">Rapor Ayı / Yılı:</label>
+        <input type="month" id="reportMonthInput" onchange="renderReports()" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-400" />
+      </div>
+    </div>
+
+    <!-- Monthly Trend + 3D Radar Category Balance -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div class="lg:col-span-2 chart-3d-wrap">
+        <div class="space-card chart-3d-inner rounded-2xl p-6 h-full">
+          <h3 class="text-base font-bold text-white mb-1 flex items-center gap-2">
+            <i data-lucide="line-chart" class="w-5 h-5 text-indigo-400"></i>
+            Aylık Gün-Gün Disiplin Eğrisi (3D Görünüm)
+          </h3>
+          <p class="text-xs text-slate-400 mb-4">Seçilen aydaki her gün için tamamlanan rutin yüzdesi</p>
+          <div class="relative h-64 w-full">
+            <canvas id="monthlyTrendChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="chart-3d-wrap">
+        <div class="space-card chart-3d-inner rounded-2xl p-6 h-full">
+          <h3 class="text-base font-bold text-white mb-1 flex items-center gap-2">
+            <i data-lucide="compass" class="w-5 h-5 text-pink-400"></i>
+            Kategori Dengesi (Radar)
+          </h3>
+          <p class="text-xs text-slate-400 mb-4">Kategorilere göre başarı dağılımı</p>
+          <div class="relative h-64 w-full">
+            <canvas id="categoryRadarChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Kanban Project Analytics + Monthly Habit Breakdown -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div class="space-card rounded-2xl p-6">
+        <h3 class="text-base font-bold text-white mb-1 flex items-center gap-2">
+          <i data-lucide="bar-chart-horizontal" class="w-5 h-5 text-violet-400"></i>
+          Proje Bazlı Kanban Görev Raporu (TODO / IN PROGRESS / DONE)
+        </h3>
+        <p class="text-xs text-slate-400 mb-4">Projelerinizdeki kartların aşama dağılımı ve alt kontrol listesi (checklist) ilerlemesi</p>
+        <div class="relative h-64 w-full">
+          <canvas id="kanbanReportChart"></canvas>
+        </div>
+      </div>
+
+      <div class="space-card rounded-2xl p-6 flex flex-col">
+        <h3 class="text-base font-bold text-white mb-1 flex items-center gap-2">
+          <i data-lucide="award" class="w-5 h-5 text-emerald-400"></i>
+          Aylık Alışkanlık Karnesi & Tutarlılık Oranları
+        </h3>
+        <p class="text-xs text-slate-400 mb-4">Seçilen ayda her bir alışkanlığın planlanan günlere göre tamamlanma performansı</p>
+        <div id="monthly-habit-scorecard" class="flex-1 space-y-3 overflow-y-auto max-h-64 pr-1"></div>
+      </div>
+    </div>
+
+    <!-- 365-Day Yearly Space Matrix (GitHub-style Heatmap) -->
+    <div class="space-card rounded-2xl p-6">
+      <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+        <div>
+          <h3 class="text-base font-bold text-white flex items-center gap-2">
+            <i data-lucide="grid" class="w-5 h-5 text-cyan-400"></i>
+            Yıllık Galaksi Aktivite Haritası (Son 52 Hafta / 364 Gün)
+          </h3>
+          <p class="text-xs text-slate-400">Geriye dönük tüm yılın günlük aktivite yoğunluğu — her kare bir günü temsil eder</p>
+        </div>
+        <div class="flex items-center gap-1.5 text-[11px] text-slate-400">
+          <span>Az</span>
+          <span class="w-3 h-3 rounded-sm bg-slate-800 inline-block"></span>
+          <span class="w-3 h-3 rounded-sm bg-indigo-900 inline-block"></span>
+          <span class="w-3 h-3 rounded-sm bg-indigo-600 inline-block"></span>
+          <span class="w-3 h-3 rounded-sm bg-cyan-400 inline-block"></span>
+          <span>Çok</span>
+        </div>
+      </div>
+      <div class="overflow-x-auto pb-2">
+        <div id="yearly-heatmap" class="inline-grid grid-rows-7 grid-flow-col gap-1.5"></div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL 1: ADD / EDIT HABIT (HEX #RRGGBB + SPECIFIC DAYS OF WEEK)           -->
+  <!-- ========================================================================= -->
+  <div id="habitModal" class="fixed inset-0 bg-black/75 backdrop-blur-md hidden items-center justify-center z-50 p-4">
+    <div class="space-card rounded-2xl max-w-lg w-full p-6 space-y-4 border border-indigo-500/40">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 id="habitModalTitle" class="text-lg font-bold text-white font-space">Yeni Rutin / Alışkanlık Tanımla</h3>
+        <button onclick="closeHabitModal()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+
+      <input type="hidden" id="editHabitId" value="" />
+
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Alışkanlık / Rutin Adı</label>
+          <input id="habitNameInput" type="text" placeholder="Örn: SONARKH Müzik Prodüksiyonu / İngilizce Pratiği" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-400" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Kategori</label>
+          <select id="habitCategorySelect" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-400"></select>
+        </div>
+
+        <!-- Specific Days of Week Selector -->
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="text-xs font-semibold text-slate-300">Haftanın Hangi Günleri Tekrar Edilecek?</label>
+            <div class="flex gap-2">
+              <button type="button" onclick="setQuickDays([0,1,2,3,4,5,6])" class="text-[11px] text-cyan-400 hover:underline">Her Gün</button>
+              <button type="button" onclick="setQuickDays([0,1,2,3,4])" class="text-[11px] text-indigo-400 hover:underline">Hafta İçi</button>
+              <button type="button" onclick="setQuickDays([5,6])" class="text-[11px] text-pink-400 hover:underline">Hafta Sonu</button>
+            </div>
+          </div>
+          <div class="grid grid-cols-7 gap-2" id="habitDaysSelector">
+            <button type="button" onclick="toggleScheduledDay(0)" data-day="0" class="day-toggle-btn py-2 rounded-xl text-xs font-bold border transition">Pzt</button>
+            <button type="button" onclick="toggleScheduledDay(1)" data-day="1" class="day-toggle-btn py-2 rounded-xl text-xs font-bold border transition">Sal</button>
+            <button type="button" onclick="toggleScheduledDay(2)" data-day="2" class="day-toggle-btn py-2 rounded-xl text-xs font-bold border transition">Çar</button>
+            <button type="button" onclick="toggleScheduledDay(3)" data-day="3" class="day-toggle-btn py-2 rounded-xl text-xs font-bold border transition">Per</button>
+            <button type="button" onclick="toggleScheduledDay(4)" data-day="4" class="day-toggle-btn py-2 rounded-xl text-xs font-bold border transition">Cum</button>
+            <button type="button" onclick="toggleScheduledDay(5)" data-day="5" class="day-toggle-btn py-2 rounded-xl text-xs font-bold border transition">Cmt</button>
+            <button type="button" onclick="toggleScheduledDay(6)" data-day="6" class="day-toggle-btn py-2 rounded-xl text-xs font-bold border transition">Paz</button>
+          </div>
+        </div>
+
+        <!-- Rich Palette + 16-bit HEX Color Picker -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-2">Renk Seçimi (Hazır Kozmik Palet veya 16'lık HEX/RGB Kodu)</label>
+          <div class="flex flex-wrap items-center gap-2 mb-3" id="presetColorSwatches"></div>
+          <div class="flex items-center gap-3 bg-slate-900/90 p-2.5 rounded-xl border border-slate-700">
+            <input type="color" id="nativeColorPicker" value="#00f2fe" onchange="syncColorFromNative(this.value)" class="w-10 h-10 rounded-lg cursor-pointer bg-transparent border-0" />
+            <div class="flex-1">
+              <label class="block text-[10px] text-slate-400 uppercase">HEX / RGB-16 Kodu</label>
+              <input type="text" id="hexColorInput" value="#00F2FE" oninput="syncColorFromHex(this.value)" placeholder="#00F2FE" maxlength="7" class="w-full bg-transparent text-sm font-mono font-bold text-white focus:outline-none" />
+            </div>
+            <div id="colorPreviewBadge" class="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-950" style="background-color:#00f2fe;">Önizleme</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-800">
+        <button onclick="closeHabitModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold">İptal</button>
+        <button onclick="saveHabit()" class="px-5 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 text-white text-xs font-bold">Rutin Kaydet</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL 2: CATEGORY MANAGER                                                 -->
+  <!-- ========================================================================= -->
+  <div id="categoryModal" class="fixed inset-0 bg-black/75 backdrop-blur-md hidden items-center justify-center z-50 p-4">
+    <div class="space-card rounded-2xl max-w-md w-full p-6 space-y-4 border border-pink-500/40">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="text-lg font-bold text-white font-space">Kategorileri Yönet</h3>
+        <button onclick="closeCategoryModal()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+
+      <div class="flex gap-2">
+        <input id="newCategoryName" type="text" placeholder="Yeni kategori adı..." class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-pink-400" />
+        <button onclick="addCategory()" class="px-4 py-2 rounded-xl bg-pink-600 hover:bg-pink-500 text-white text-xs font-bold">Ekle</button>
+      </div>
+
+      <div id="categoryListContainer" class="space-y-2 max-h-60 overflow-y-auto pr-1"></div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL 3: NEW PROJECT MODAL                                                -->
+  <!-- ========================================================================= -->
+  <div id="projectModal" class="fixed inset-0 bg-black/75 backdrop-blur-md hidden items-center justify-center z-50 p-4">
+    <div class="space-card rounded-2xl max-w-md w-full p-6 space-y-4 border border-cyan-500/40">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="text-lg font-bold text-white font-space">Yeni Proje Oluştur</h3>
+        <button onclick="closeProjectModal()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Proje Adı</label>
+          <input id="newProjectName" type="text" placeholder="Örn: Zip Stg Mobil App / Oyun Geliştirme" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-400" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Proje Rengi (HEX)</label>
+          <div class="flex items-center gap-3">
+            <input id="newProjectColor" type="color" value="#8b5cf6" class="w-10 h-10 rounded-lg bg-transparent cursor-pointer" />
+            <span class="text-xs text-slate-400">Proje sekmesinde görünecek vurgu rengi</span>
+          </div>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 pt-3 border-t border-slate-800">
+        <button onclick="closeProjectModal()" class="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold">İptal</button>
+        <button onclick="saveNewProject()" class="px-5 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold">Oluştur</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL 4: KANBAN CARD MODAL (TRELLO LABELS, HEX COLOR, OPTIONAL CHECKLIST) -->
+  <!-- ========================================================================= -->
+  <div id="kanbanCardModal" class="fixed inset-0 bg-black/75 backdrop-blur-md hidden items-center justify-center z-50 p-4">
+    <div class="space-card rounded-2xl max-w-xl w-full p-6 space-y-4 border border-violet-500/40 max-h-[92vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 id="kanbanCardModalTitle" class="text-lg font-bold text-white font-space">Proje Görev Kartı</h3>
+        <button onclick="closeKanbanCardModal()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+
+      <input type="hidden" id="editCardId" value="" />
+
+      <div class="space-y-4">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div class="sm:col-span-2">
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Kart Başlığı</label>
+            <input id="cardTitleInput" type="text" placeholder="Örn: Sentry SDK Hata Loglarını Entegre Et" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-violet-400" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Durum (Kolon)</label>
+            <select id="cardStatusSelect" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-400">
+              <option value="todo">TODO</option>
+              <option value="inprogress">IN PROGRESS</option>
+              <option value="done">DONE</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Açıklama / Notlar (İsteğe Bağlı)</label>
+          <textarea id="cardDescInput" rows="2" placeholder="Görev detayları, bağlantılar veya teknik notlar..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-violet-400"></textarea>
+        </div>
+
+        <!-- Card Accent HEX Color & Tags -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Kart Kapak / Vurgu Rengi (HEX)</label>
+            <div class="flex items-center gap-2 bg-slate-900 p-2 rounded-xl border border-slate-700">
+              <input type="color" id="cardColorPicker" value="#8b5cf6" onchange="document.getElementById('cardHexInput').value = this.value.toUpperCase()" class="w-8 h-8 rounded cursor-pointer bg-transparent" />
+              <input type="text" id="cardHexInput" value="#8B5CF6" oninput="if(/^#[0-9A-Fa-f]{6}$/.test(this.value)) document.getElementById('cardColorPicker').value = this.value" class="bg-transparent text-xs font-mono font-bold text-white focus:outline-none w-24" />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Yeni Etiket (Tag) Ekle</label>
+            <div class="flex gap-1.5">
+              <input type="text" id="newTagInput" placeholder="Örn: Acil, Backend, UI" class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none" />
+              <input type="color" id="newTagColor" value="#ec4899" class="w-9 h-9 rounded-lg bg-transparent cursor-pointer" />
+              <button type="button" onclick="addTagToCardModal()" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-white">+</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Active Tags Display -->
+        <div id="modalCardTags" class="flex flex-wrap gap-1.5"></div>
+
+        <!-- Trello-Style Optional Checklist -->
+        <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-3.5 space-y-2.5">
+          <div class="flex items-center justify-between">
+            <label class="text-xs font-bold text-cyan-300 flex items-center gap-1.5">
+              <i data-lucide="list-checks" class="w-4 h-4"></i>
+              Alt Görev Listesi / Checklist (İsteğe Bağlı)
+            </label>
+            <span class="text-[11px] text-slate-400">Zorunlu değildir</span>
+          </div>
+          <div class="flex gap-2">
+            <input type="text" id="newChecklistItemInput" onkeydown="if(event.key==='Enter'){event.preventDefault();addChecklistItemModal();}" placeholder="Alt madde yazıp Enter'a veya Ekle'ye basın..." class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-400" />
+            <button type="button" onclick="addChecklistItemModal()" class="px-3.5 py-2 rounded-xl bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-300 border border-cyan-500/30 text-xs font-bold">Madde Ekle</button>
+          </div>
+          <div id="modalChecklistContainer" class="space-y-1.5 max-h-40 overflow-y-auto pr-1"></div>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between pt-3 border-t border-slate-800">
+        <button type="button" id="deleteCardBtn" onclick="deleteCardFromModal()" class="hidden px-3.5 py-2 rounded-xl bg-rose-950/70 hover:bg-rose-900 text-rose-300 text-xs font-bold">Kartı Sil</button>
+        <div class="flex items-center gap-2 ml-auto">
+          <button type="button" onclick="closeKanbanCardModal()" class="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold">İptal</button>
+          <button type="button" onclick="saveKanbanCard()" class="px-5 py-2 rounded-xl bg-gradient-to-r from-violet-600 to-pink-600 hover:from-violet-500 hover:to-pink-500 text-white text-xs font-bold">Kartı Kaydet</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- APPLICATION LOGIC                                                         -->
+  <!-- ========================================================================= -->
+  <script>
+    // --- STARFIELD ANIMATION ---
+    (function initStarfield() {
+      const canvas = document.getElementById('starfield');
+      const ctx = canvas.getContext('2d');
+      let stars = [];
+      function resize() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        stars = Array.from({ length: 130 }, () => ({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          r: Math.random() * 1.5 + 0.3,
+          alpha: Math.random(),
+          speed: (Math.random() * 0.015 + 0.004) * (Math.random() < 0.5 ? 1 : -1)
+        }));
+      }
+      window.addEventListener('resize', resize);
+      resize();
+      function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        for (const s of stars) {
+          s.alpha += s.speed;
+          if (s.alpha > 1 || s.alpha < 0.15) s.speed = -s.speed;
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(226, 232, 240, ${Math.max(0.1, Math.min(1, s.alpha))})`;
+          ctx.fill();
+        }
+        requestAnimationFrame(animate);
+      }
+      animate();
+    })();
+
+    // --- CONSTANTS & PRESETS ---
+    const DAY_NAMES = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
+    const PRESET_COLORS = [
+      '#00F2FE', '#6366F1', '#8B5CF6', '#EC4899', '#F43F5E',
+      '#F59E0B', '#10B981', '#14B8A6', '#3B82F6', '#A855F7',
+      '#EAB308', '#84CC16', '#06B6D4', '#F97316'
+    ];
+
+    // --- DATE HELPERS ---
+    function formatDateKey(dateObj) {
+      const y = dateObj.getFullYear();
+      const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+      const d = String(dateObj.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+
+    function getMondayOfOffsetWeek(weekOffset = 0) {
+      const now = new Date();
+      const jsDay = now.getDay(); // 0=Sun..6=Sat
+      const diffToMonday = jsDay === 0 ? -6 : 1 - jsDay;
+      const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + diffToMonday + (weekOffset * 7));
+      return monday;
+    }
+
+    function getWeekDates(weekOffset = 0) {
+      const monday = getMondayOfOffsetWeek(weekOffset);
+      return Array.from({ length: 7 }, (_, i) => {
+        const d = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + i);
+        return d;
+      });
+    }
+
+    function getDayIndexMon0(dateObj) {
+      const jsDay = dateObj.getDay();
+      return jsDay === 0 ? 6 : jsDay - 1;
+    }
+
+    // --- STATE & MIGRATION FROM V1 ---
+    let currentWeekOffset = 0;
+    let weeklyChartType = 'bar';
+    let weeklyChartInstance = null;
+    let monthlyTrendChartInstance = null;
+    let categoryRadarChartInstance = null;
+    let kanbanReportChartInstance = null;
+
+    const DEFAULT_CATEGORIES = ['Üretkenlik', 'Zihin & Gelişim', 'Sağlık & Spor', 'Müzik & Sanat', 'Yazılım & AI'];
+
+    function loadOrMigrateState() {
+      const v2Raw = localStorage.getItem('cosmos_tracker_v2');
+      if (v2Raw) {
+        try { return JSON.parse(v2Raw); } catch (e) {}
+      }
+
+      // Check if user had v1 data in `desktop_habits_v1`
+      const v1Raw = localStorage.getItem('desktop_habits_v1');
+      const currentWeekDates = getWeekDates(0);
+
+      let initialHabits = [];
+      if (v1Raw) {
+        try {
+          const v1Habits = JSON.parse(v1Raw);
+          if (Array.isArray(v1Habits) && v1Habits.length > 0) {
+            initialHabits = v1Habits.map(h => {
+              const history = {};
+              if (Array.isArray(h.days)) {
+                h.days.forEach((done, idx) => {
+                  if (done && currentWeekDates[idx]) {
+                    history[formatDateKey(currentWeekDates[idx])] = true;
+                  }
+                });
+              }
+              return {
+                id: h.id || Date.now() + Math.random(),
+                name: h.name || 'Alışkanlık',
+                category: h.category || 'Üretkenlik',
+                color: (h.color || '#6366F1').toUpperCase(),
+                scheduledDays: [0, 1, 2, 3, 4, 5, 6],
+                history
+              };
+            });
+          }
+        } catch (e) {}
+      }
+
+      if (initialHabits.length === 0) {
+        const todayKey = formatDateKey(currentWeekDates[0]);
+        const tueKey = formatDateKey(currentWeekDates[1]);
+        initialHabits = [
+          {
+            id: 101,
+            name: 'SONARKH',
+            category: 'Üretkenlik',
+            color: '#6366F1',
+            scheduledDays: [0, 1, 2, 3, 4, 5, 6],
+            history: { [todayKey]: true, [tueKey]: true }
+          },
+          {
+            id: 102,
+            name: 'İngilizce',
+            category: 'Zihin & Gelişim',
+            color: '#00F2FE',
+            scheduledDays: [0, 1, 2, 3, 4],
+            history: {}
+          },
+          {
+            id: 103,
+            name: 'NFB',
+            category: 'Sağlık & Spor',
+            color: '#10B981',
+            scheduledDays: [0, 1, 2, 3, 4, 5, 6],
+            history: {}
+          }
+        ];
+      }
+
+      const defaultProjects = [
+        {
+          id: 'proj-1',
+          name: 'SONARKH & Müzik Üssü',
+          color: '#6366F1',
+          cards: [
+            {
+              id: 'card-1',
+              title: 'Yeni Parça Mastering & DistroKid Yüklemesi',
+              desc: 'Spotify ve Apple Music çıkış tarihlerini kontrol et',
+              status: 'inprogress',
+              color: '#00F2FE',
+              tags: [{ name: 'Prodüksiyon', color: '#8B5CF6' }, { name: 'Yüksek Öncelik', color: '#EC4899' }],
+              checklist: [
+                { text: 'Mix son kontrolleri', done: true },
+                { text: 'Kapak tasarımı 3000x3000px', done: true },
+                { text: 'DistroKid metadata girişi', done: false }
+              ],
+              createdAt: formatDateKey(new Date())
+            },
+            {
+              id: 'card-2',
+              title: 'Web Sitesi (sonarkh.com) Güncellemesi',
+              desc: 'Yeni albüm bağlantılarını ana sayfaya ekle',
+              status: 'todo',
+              color: '#F59E0B',
+              tags: [{ name: 'Web', color: '#06B6D4' }],
+              checklist: [],
+              createdAt: formatDateKey(new Date())
+            }
+          ]
+        },
+        {
+          id: 'proj-2',
+          name: 'Yazılım & Oyun Geliştirme',
+          color: '#10B981',
+          cards: [
+            {
+              id: 'card-3',
+              title: 'Mobil Uygulama Sentry SDK & Firebase Testi',
+              desc: 'Android build alıp test dağıtımını doğrula',
+              status: 'done',
+              color: '#10B981',
+              tags: [{ name: 'Android', color: '#10B981' }],
+              checklist: [
+                { text: 'Sentry hata log kontrolü', done: true },
+                { text: 'Firebase App Distribution yüklemesi', done: true }
+              ],
+              createdAt: formatDateKey(new Date())
+            }
+          ]
+        }
+      ];
+
+      return {
+        categories: DEFAULT_CATEGORIES,
+        habits: initialHabits,
+        projects: defaultProjects,
+        activeProjectId: 'proj-1'
+      };
+    }
+
+    let state = loadOrMigrateState();
+
+    function saveState() {
+      localStorage.setItem('cosmos_tracker_v2', JSON.stringify(state));
+    }
+
+    // --- TAB NAVIGATION ---
+    function switchTab(tab) {
+      ['habits', 'kanban', 'reports'].forEach(t => {
+        const view = document.getElementById(`view-${t}`);
+        const btn = document.getElementById(`tab-${t}`);
+        if (t === tab) {
+          view.classList.remove('hidden');
+          btn.className = 'px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-lg shadow-indigo-600/30';
+        } else {
+          view.classList.add('hidden');
+          btn.className = 'px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition text-slate-400 hover:text-white';
+        }
+      });
+      renderAll();
+    }
+
+    // --- STREAK CALCULATION (RESPECTING SCHEDULED DAYS) ---
+    function calculateHabitStreak(habit) {
+      const scheduled = habit.scheduledDays && habit.scheduledDays.length > 0 ? habit.scheduledDays : [0,1,2,3,4,5,6];
+      const today = new Date();
+      let streak = 0;
+
+      // Check up to 365 days backwards from today
+      for (let i = 0; i < 365; i++) {
+        const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() - i);
+        const dayIdx = getDayIndexMon0(d);
+        if (!scheduled.includes(dayIdx)) continue; // Not scheduled on this weekday, doesn't break streak
+
+        const key = formatDateKey(d);
+        if (habit.history && habit.history[key]) {
+          streak++;
+        } else {
+          // If it's today (i === 0) and not checked yet, don't break streak from yesterday
+          if (i === 0) continue;
+          break;
+        }
+      }
+      return streak;
+    }
+
+    // --- WEEK NAVIGATION ---
+    function shiftWeek(delta) {
+      currentWeekOffset += delta;
+      renderAll();
+    }
+
+    function goToCurrentWeek() {
+      currentWeekOffset = 0;
+      renderAll();
+    }
+
+    // --- HABIT CHECK-IN TOGGLE ---
+    function toggleHabitDate(habitId, dateKey) {
+      const habit = state.habits.find(h => String(h.id) === String(habitId));
+      if (!habit) return;
+      if (!habit.history) habit.history = {};
+      if (habit.history[dateKey]) {
+        delete habit.history[dateKey];
+      } else {
+        habit.history[dateKey] = true;
+      }
+      saveState();
+      renderAll();
+    }
+
+    // --- RENDER CATEGORY FILTER DROPDOWN ---
+    function renderCategoryDropdowns() {
+      const filterEl = document.getElementById('habitCategoryFilter');
+      const currentVal = filterEl.value || 'Tümü';
+      filterEl.innerHTML = `<option value="Tümü">Tüm Kategoriler</option>` +
+        state.categories.map(c => `<option value="${c}">${c}</option>`).join('');
+      if ([...filterEl.options].some(o => o.value === currentVal)) {
+        filterEl.value = currentVal;
+      }
+
+      const modalSelect = document.getElementById('habitCategorySelect');
+      modalSelect.innerHTML = state.categories.map(c => `<option value="${c}">${c}</option>`).join('');
+    }
+
+    // --- RENDER HABITS VIEW ---
+    function renderHabitsView() {
+      const weekDates = getWeekDates(currentWeekOffset);
+      const firstDay = weekDates[0];
+      const lastDay = weekDates[6];
+      const fmtOpts = { day: 'numeric', month: 'short', year: 'numeric' };
+      document.getElementById('week-range-label').textContent =
+        `${firstDay.toLocaleDateString('tr-TR', fmtOpts)} – ${lastDay.toLocaleDateString('tr-TR', fmtOpts)}`;
+
+      const badge = document.getElementById('week-badge');
+      if (currentWeekOffset === 0) {
+        badge.textContent = 'BU HAFTA (AKTİF YÖRÜNGE)';
+        badge.className = 'text-xs font-semibold uppercase tracking-widest text-cyan-400';
+      } else if (currentWeekOffset < 0) {
+        badge.textContent = `${Math.abs(currentWeekOffset)} HAFTA ÖNCE (ARŞİV KAYDI)`;
+        badge.className = 'text-xs font-semibold uppercase tracking-widest text-amber-400';
+      } else {
+        badge.textContent = `${currentWeekOffset} HAFTA SONRA (GELECEK PLANI)`;
+        badge.className = 'text-xs font-semibold uppercase tracking-widest text-violet-400';
+      }
+
+      // KPI 1: Today's scheduled completion
+      const today = new Date();
+      const todayKey = formatDateKey(today);
+      const todayDayIdx = getDayIndexMon0(today);
+      const scheduledTodayHabits = state.habits.filter(h => (h.scheduledDays || [0,1,2,3,4,5,6]).includes(todayDayIdx));
+      const doneTodayCount = scheduledTodayHabits.filter(h => h.history && h.history[todayKey]).length;
+      const todayPct = scheduledTodayHabits.length > 0 ? Math.round((doneTodayCount / scheduledTodayHabits.length) * 100) : 0;
+
+      document.getElementById('kpi-today').textContent = `${doneTodayCount}/${scheduledTodayHabits.length}`;
+      document.getElementById('kpi-today-pct').textContent = `%${todayPct}`;
+
+      // KPI 2: Selected Week completion
+      let weekScheduledTotal = 0;
+      let weekDoneTotal = 0;
+      state.habits.forEach(h => {
+        const sched = h.scheduledDays || [0,1,2,3,4,5,6];
+        weekDates.forEach((d, idx) => {
+          const dKey = formatDateKey(d);
+          if (sched.includes(idx)) {
+            weekScheduledTotal++;
+            if (h.history && h.history[dKey]) weekDoneTotal++;
+          }
+        });
+      });
+      const weekPct = weekScheduledTotal > 0 ? Math.round((weekDoneTotal / weekScheduledTotal) * 100) : 0;
+      document.getElementById('kpi-week-pct').textContent = `%${weekPct}`;
+      document.getElementById('kpi-week-fraction').textContent = `(${weekDoneTotal}/${weekScheduledTotal})`;
+
+      // KPI 3: Best Streak
+      let bestStreak = 0;
+      let bestHabitName = 'Henüz seri yok';
+      state.habits.forEach(h => {
+        const s = calculateHabitStreak(h);
+        if (s > bestStreak) {
+          bestStreak = s;
+          bestHabitName = h.name;
+        }
+      });
+      document.getElementById('kpi-best-streak').textContent = `${bestStreak} Gün`;
+      document.getElementById('kpi-best-streak-name').textContent = bestHabitName;
+
+      // KPI 4: Kanban total done cards
+      let totalCards = 0;
+      let doneCards = 0;
+      state.projects.forEach(p => {
+        p.cards.forEach(c => {
+          totalCards++;
+          if (c.status === 'done') doneCards++;
+        });
+      });
+      document.getElementById('kpi-kanban-done').textContent = `${doneCards}/${totalCards}`;
+
+      // Table Header with Dates
+      const thead = document.getElementById('habit-table-head');
+      let headHtml = `<th class="py-3 px-4 min-w-[230px]">Rutin & Aktif Günler</th>`;
+      weekDates.forEach((d, idx) => {
+        const dKey = formatDateKey(d);
+        const isToday = dKey === todayKey;
+        headHtml += `
+          <th class="py-3 px-2 text-center ${isToday ? 'text-cyan-400 font-extrabold' : ''}">
+            <div>${DAY_NAMES[idx]}</div>
+            <div class="text-[10px] opacity-75">${d.getDate()}/${d.getMonth() + 1}</div>
+          </th>
+        `;
+      });
+      headHtml += `
+        <th class="py-3 px-4 text-center min-w-[140px]">Haftalık Hedef</th>
+        <th class="py-3 px-3 text-center">Seri</th>
+        <th class="py-3 px-2 text-right">İşlem</th>
+      `;
+      thead.innerHTML = headHtml;
+
+      // Table Body
+      const filterCat = document.getElementById('habitCategoryFilter').value || 'Tümü';
+      const filteredHabits = filterCat === 'Tümü'
+        ? state.habits
+        : state.habits.filter(h => h.category === filterCat);
+
+      const tbody = document.getElementById('habit-table-body');
+      tbody.innerHTML = '';
+
+      filteredHabits.forEach(h => {
+        const sched = h.scheduledDays || [0,1,2,3,4,5,6];
+        const targetCount = sched.length;
+        let completedThisWeek = 0;
+
+        let cellsHtml = '';
+        weekDates.forEach((d, idx) => {
+          const dKey = formatDateKey(d);
+          const isScheduled = sched.includes(idx);
+          const isDone = !!(h.history && h.history[dKey]);
+          if (isDone) completedThisWeek++;
+
+          if (isScheduled) {
+            cellsHtml += `
+              <td class="py-3 px-2 text-center">
+                <button onclick="toggleHabitDate('${h.id}', '${dKey}')"
+                  style="${isDone ? `background-color: ${h.color}; border-color: ${h.color}; box-shadow: 0 0 12px ${h.color}66;` : ''}"
+                  class="w-9 h-9 rounded-xl border ${isDone ? 'text-slate-950 font-bold' : 'border-slate-700 bg-slate-900/70 text-transparent hover:border-cyan-400/60'} inline-flex items-center justify-center transition transform active:scale-90"
+                  title="${dKey} (${DAY_NAMES[idx]})">
+                  <i data-lucide="check" class="w-4 h-4"></i>
+                </button>
+              </td>
+            `;
+          } else {
+            // Off-day (not scheduled)
+            cellsHtml += `
+              <td class="py-3 px-2 text-center">
+                <button onclick="toggleHabitDate('${h.id}', '${dKey}')"
+                  style="${isDone ? `background-color: ${h.color}; border-color: ${h.color};` : ''}"
+                  class="w-9 h-9 rounded-xl border ${isDone ? 'text-slate-950' : 'border-slate-800/60 bg-slate-950/40 text-slate-700 hover:border-slate-700'} inline-flex items-center justify-center transition opacity-45 hover:opacity-100"
+                  title="Plan dışı gün (${DAY_NAMES[idx]}) - Yine de işaretlemek için tıklayın">
+                  ${isDone ? '<i data-lucide="check" class="w-4 h-4"></i>' : '<span class="text-[10px]">—</span>'}
+                </button>
+              </td>
+            `;
+          }
+        });
+
+        const pct = targetCount > 0 ? Math.min(100, Math.round((completedThisWeek / targetCount) * 100)) : 0;
+        const streak = calculateHabitStreak(h);
+        const schedBadgeText = sched.length === 7 ? 'Her Gün' : sched.map(i => DAY_NAMES[i]).join(', ');
+
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-indigo-950/20 transition';
+        tr.innerHTML = `
+          <td class="py-3.5 px-4">
+            <div class="flex items-center gap-3">
+              <span class="w-3.5 h-3.5 rounded-full shrink-0 shadow-sm" style="background-color: ${h.color}; box-shadow: 0 0 10px ${h.color}"></span>
+              <div>
+                <p class="font-bold text-white">${h.name}</p>
+                <div class="flex items-center gap-2 mt-0.5">
+                  <span class="text-[10px] px-2 py-0.5 rounded-md bg-slate-800 text-slate-300">${h.category}</span>
+                  <span class="text-[10px] text-cyan-400/90">${schedBadgeText}</span>
+                </div>
+              </div>
+            </div>
+          </td>
+          ${cellsHtml}
+          <td class="py-3 px-4">
+            <div class="flex items-center justify-between text-xs mb-1">
+              <span class="text-slate-200 font-bold">${completedThisWeek}/${targetCount}</span>
+              <span class="text-slate-400">%${pct}</span>
+            </div>
+            <div class="w-full h-2 bg-slate-900 rounded-full overflow-hidden border border-slate-800">
+              <div class="h-full rounded-full transition-all duration-300" style="width: ${pct}%; background-color: ${h.color}"></div>
+            </div>
+          </td>
+          <td class="py-3 px-3 text-center">
+            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-400 border border-amber-500/25">
+              🔥 ${streak}
+            </span>
+          </td>
+          <td class="py-3 px-2 text-right">
+            <div class="inline-flex items-center gap-1">
+              <button onclick="openHabitModal('${h.id}')" class="p-1.5 text-slate-400 hover:text-cyan-400 rounded-lg transition" title="Düzenle">
+                <i data-lucide="settings-2" class="w-4 h-4"></i>
+              </button>
+              <button onclick="deleteHabit('${h.id}')" class="p-1.5 text-slate-500 hover:text-rose-400 rounded-lg transition" title="Sil">
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      // Render Streak Leaderboard
+      const leaderEl = document.getElementById('streak-leaderboard');
+      leaderEl.innerHTML = '';
+      const sortedHabits = [...state.habits].sort((a, b) => calculateHabitStreak(b) - calculateHabitStreak(a));
+      sortedHabits.forEach(h => {
+        const s = calculateHabitStreak(h);
+        const totalEver = h.history ? Object.keys(h.history).length : 0;
+        const item = document.createElement('div');
+        item.className = 'flex items-center justify-between p-3 rounded-xl bg-slate-900/75 border border-slate-800/90';
+        item.innerHTML = `
+          <div class="flex items-center gap-3">
+            <div class="w-2 h-9 rounded-full" style="background-color: ${h.color}; box-shadow: 0 0 8px ${h.color}"></div>
+            <div>
+              <p class="text-sm font-bold text-white">${h.name}</p>
+              <p class="text-[11px] text-slate-400">Toplam geçmiş kayıt: ${totalEver} gün</p>
+            </div>
+          </div>
+          <div class="px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-400 font-bold text-xs">
+            🔥 ${s} Gün
+          </div>
+        `;
+        leaderEl.appendChild(item);
+      });
+
+      renderWeekly3DChart(weekDates);
+    }
+
+    function setWeeklyChartType(type) {
+      weeklyChartType = type;
+      document.getElementById('btn-chart-bar').className = type === 'bar'
+        ? 'px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white transition'
+        : 'px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition';
+      document.getElementById('btn-chart-line').className = type === 'line'
+        ? 'px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white transition'
+        : 'px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition';
+      renderWeekly3DChart(getWeekDates(currentWeekOffset));
+    }
+
+    // Custom 3D Shadow Plugin for Chart.js
+    const chart3DShadowPlugin = {
+      id: 'chart3DShadowPlugin',
+      beforeDatasetsDraw(chart) {
+        const ctx = chart.ctx;
+        ctx.save();
+        ctx.shadowColor = 'rgba(0, 242, 254, 0.35)';
+        ctx.shadowBlur = 16;
+        ctx.shadowOffsetX = 5;
+        ctx.shadowOffsetY = 8;
+      },
+      afterDatasetsDraw(chart) {
+        chart.ctx.restore();
+      }
+    };
+
+    function renderWeekly3DChart(weekDates) {
+      const ctx = document.getElementById('weeklyChartCanvas').getContext('2d');
+      const labels = weekDates.map((d, i) => `${DAY_NAMES[i]} (${d.getDate()}/${d.getMonth()+1})`);
+
+      const dataPts = weekDates.map((d, dayIdx) => {
+        const dKey = formatDateKey(d);
+        const scheduledHabits = state.habits.filter(h => (h.scheduledDays || [0,1,2,3,4,5,6]).includes(dayIdx));
+        if (scheduledHabits.length === 0) return 0;
+        const done = scheduledHabits.filter(h => h.history && h.history[dKey]).length;
+        return Math.round((done / scheduledHabits.length) * 100);
+      });
+
+      if (weeklyChartInstance) weeklyChartInstance.destroy();
+
+      const grad = ctx.createLinearGradient(0, 0, 0, 250);
+      grad.addColorStop(0, 'rgba(0, 242, 254, 0.85)');
+      grad.addColorStop(0.6, 'rgba(99, 102, 241, 0.55)');
+      grad.addColorStop(1, 'rgba(139, 92, 246, 0.15)');
+
+      weeklyChartInstance = new Chart(ctx, {
+        type: weeklyChartType,
+        plugins: [chart3DShadowPlugin],
+        data: {
+          labels,
+          datasets: [{
+            label: 'Tamamlanma Oranı (%)',
+            data: dataPts,
+            borderColor: '#00F2FE',
+            backgroundColor: grad,
+            borderWidth: 2.5,
+            borderRadius: weeklyChartType === 'bar' ? 10 : 0,
+            fill: true,
+            tension: 0.38,
+            pointBackgroundColor: '#00F2FE',
+            pointBorderColor: '#fff',
+            pointRadius: 5,
+            pointHoverRadius: 8
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#070b19',
+              titleColor: '#00f2fe',
+              bodyColor: '#f1f5f9',
+              borderColor: '#6366f1',
+              borderWidth: 1,
+              callbacks: { label: c => ` Başarı: %${c.parsed.y}` }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 100,
+              grid: { color: 'rgba(99, 102, 241, 0.14)' },
+              ticks: { color: '#94a3b8', callback: v => `%${v}` }
+            },
+            x: {
+              grid: { display: false },
+              ticks: { color: '#cbd5e1' }
+            }
+          }
+        }
+      });
+    }
+
+    // --- HABIT MODAL & COLOR / SCHEDULE CONTROLS ---
+    let modalScheduledDays = [0, 1, 2, 3, 4, 5, 6];
+    let modalSelectedColor = '#00F2FE';
+
+    function renderPresetSwatches() {
+      const container = document.getElementById('presetColorSwatches');
+      container.innerHTML = PRESET_COLORS.map(c => `
+        <button type="button" onclick="setModalColor('${c}')"
+          class="w-7 h-7 rounded-lg border border-white/20 transition transform hover:scale-110"
+          style="background-color: ${c}; box-shadow: 0 0 8px ${c}66" title="${c}"></button>
+      `).join('');
+    }
+
+    function setModalColor(hex) {
+      const clean = hex.toUpperCase();
+      modalSelectedColor = clean;
+      document.getElementById('nativeColorPicker').value = clean;
+      document.getElementById('hexColorInput').value = clean;
+      const badge = document.getElementById('colorPreviewBadge');
+      badge.style.backgroundColor = clean;
+    }
+
+    function syncColorFromNative(val) {
+      setModalColor(val);
+    }
+
+    function syncColorFromHex(val) {
+      let v = val.trim();
+      if (!v.startsWith('#')) v = '#' + v;
+      if (/^#[0-9A-Fa-f]{6}$/.test(v)) {
+        modalSelectedColor = v.toUpperCase();
+        document.getElementById('nativeColorPicker').value = modalSelectedColor;
+        document.getElementById('colorPreviewBadge').style.backgroundColor = modalSelectedColor;
+      }
+    }
+
+    function renderDayToggleButtons() {
+      document.querySelectorAll('#habitDaysSelector .day-toggle-btn').forEach(btn => {
+        const d = parseInt(btn.getAttribute('data-day'), 10);
+        if (modalScheduledDays.includes(d)) {
+          btn.className = 'day-toggle-btn py-2 rounded-xl text-xs font-bold border border-cyan-400 bg-cyan-500/20 text-cyan-300 shadow-md shadow-cyan-500/10 transition';
+        } else {
+          btn.className = 'day-toggle-btn py-2 rounded-xl text-xs font-bold border border-slate-800 bg-slate-900/60 text-slate-500 hover:text-slate-300 transition';
+        }
+      });
+    }
+
+    function toggleScheduledDay(dayIdx) {
+      if (modalScheduledDays.includes(dayIdx)) {
+        if (modalScheduledDays.length > 1) {
+          modalScheduledDays = modalScheduledDays.filter(d => d !== dayIdx);
+        }
+      } else {
+        modalScheduledDays.push(dayIdx);
+        modalScheduledDays.sort((a, b) => a - b);
+      }
+      renderDayToggleButtons();
+    }
+
+    function setQuickDays(arr) {
+      modalScheduledDays = [...arr];
+      renderDayToggleButtons();
+    }
+
+    function openHabitModal(editId = null) {
+      renderCategoryDropdowns();
+      renderPresetSwatches();
+
+      if (editId) {
+        const h = state.habits.find(x => String(x.id) === String(editId));
+        if (!h) return;
+        document.getElementById('habitModalTitle').textContent = 'Rutini Düzenle';
+        document.getElementById('editHabitId').value = h.id;
+        document.getElementById('habitNameInput').value = h.name;
+        document.getElementById('habitCategorySelect').value = h.category;
+        modalScheduledDays = [...(h.scheduledDays || [0,1,2,3,4,5,6])];
+        setModalColor(h.color || '#00F2FE');
+      } else {
+        document.getElementById('habitModalTitle').textContent = 'Yeni Rutin / Alışkanlık Tanımla';
+        document.getElementById('editHabitId').value = '';
+        document.getElementById('habitNameInput').value = '';
+        modalScheduledDays = [0, 1, 2, 3, 4, 5, 6];
+        setModalColor('#00F2FE');
+      }
+      renderDayToggleButtons();
+      document.getElementById('habitModal').classList.remove('hidden');
+      document.getElementById('habitModal').classList.add('flex');
+    }
+
+    function closeHabitModal() {
+      document.getElementById('habitModal').classList.add('hidden');
+      document.getElementById('habitModal').classList.remove('flex');
+    }
+
+    function saveHabit() {
+      const name = document.getElementById('habitNameInput').value.trim();
+      if (!name) return alert('Lütfen bir alışkanlık adı girin.');
+      const category = document.getElementById('habitCategorySelect').value;
+      const editId = document.getElementById('editHabitId').value;
+
+      if (editId) {
+        state.habits = state.habits.map(h => {
+          if (String(h.id) === String(editId)) {
+            return { ...h, name, category, color: modalSelectedColor, scheduledDays: [...modalScheduledDays] };
+          }
+          return h;
+        });
+      } else {
+        state.habits.push({
+          id: Date.now(),
+          name,
+          category,
+          color: modalSelectedColor,
+          scheduledDays: [...modalScheduledDays],
+          history: {}
+        });
+      }
+      saveState();
+      closeHabitModal();
+      renderAll();
+    }
+
+    function deleteHabit(id) {
+      if (!confirm('Bu alışkanlığı ve geçmiş kayıtlarını silmek istediğinize emin misiniz?')) return;
+      state.habits = state.habits.filter(h => String(h.id) !== String(id));
+      saveState();
+      renderAll();
+    }
+
+    // --- CATEGORY MODAL ---
+    function openCategoryModal() {
+      renderCategoryListModal();
+      document.getElementById('categoryModal').classList.remove('hidden');
+      document.getElementById('categoryModal').classList.add('flex');
+    }
+
+    function closeCategoryModal() {
+      document.getElementById('categoryModal').classList.add('hidden');
+      document.getElementById('categoryModal').classList.remove('flex');
+    }
+
+    function renderCategoryListModal() {
+      const container = document.getElementById('categoryListContainer');
+      container.innerHTML = state.categories.map(cat => `
+        <div class="flex items-center justify-between px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-800">
+          <span class="text-xs font-semibold text-white">${cat}</span>
+          <button onclick="deleteCategory('${cat}')" class="text-slate-500 hover:text-rose-400 text-xs font-bold">Kaldır</button>
+        </div>
+      `).join('');
+    }
+
+    function addCategory() {
+      const input = document.getElementById('newCategoryName');
+      const val = input.value.trim();
+      if (!val) return;
+      if (!state.categories.includes(val)) {
+        state.categories.push(val);
+        saveState();
+      }
+      input.value = '';
+      renderCategoryListModal();
+      renderCategoryDropdowns();
+    }
+
+    function deleteCategory(cat) {
+      if (state.categories.length <= 1) return alert('En az 1 kategori kalmalıdır.');
+      state.categories = state.categories.filter(c => c !== cat);
+      saveState();
+      renderCategoryListModal();
+      renderCategoryDropdowns();
+      renderAll();
+    }
+
+    // =========================================================================
+    // KANBAN & PROJECT FUNCTIONS
+    // =========================================================================
+    function getActiveProject() {
+      let proj = state.projects.find(p => p.id === state.activeProjectId);
+      if (!proj && state.projects.length > 0) {
+        state.activeProjectId = state.projects[0].id;
+        proj = state.projects[0];
+      }
+      return proj;
+    }
+
+    function selectProject(projId) {
+      state.activeProjectId = projId;
+      saveState();
+      renderKanbanView();
+    }
+
+    function openProjectModal() {
+      document.getElementById('newProjectName').value = '';
+      document.getElementById('projectModal').classList.remove('hidden');
+      document.getElementById('projectModal').classList.add('flex');
+    }
+
+    function closeProjectModal() {
+      document.getElementById('projectModal').classList.add('hidden');
+      document.getElementById('projectModal').classList.remove('flex');
+    }
+
+    function saveNewProject() {
+      const name = document.getElementById('newProjectName').value.trim();
+      const color = document.getElementById('newProjectColor').value || '#8b5cf6';
+      if (!name) return alert('Lütfen proje adı girin.');
+      const newProj = {
+        id: 'proj-' + Date.now(),
+        name,
+        color: color.toUpperCase(),
+        cards: []
+      };
+      state.projects.push(newProj);
+      state.activeProjectId = newProj.id;
+      saveState();
+      closeProjectModal();
+      renderAll();
+    }
+
+    function deleteCurrentProject() {
+      if (state.projects.length <= 1) return alert('En az bir aktif proje bulunmalıdır.');
+      const proj = getActiveProject();
+      if (!confirm(`"${proj.name}" projesini ve içindeki tüm kartları silmek istediğinize emin misiniz?`)) return;
+      state.projects = state.projects.filter(p => p.id !== proj.id);
+      state.activeProjectId = state.projects[0].id;
+      saveState();
+      renderAll();
+    }
+
+    function renderKanbanView() {
+      const tabsEl = document.getElementById('project-tabs-container');
+      const activeProj = getActiveProject();
+
+      tabsEl.innerHTML = state.projects.map(p => {
+        const isActive = activeProj && p.id === activeProj.id;
+        return `
+          <button onclick="selectProject('${p.id}')"
+            class="px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 border transition ${
+              isActive
+                ? 'bg-slate-800 text-white border-cyan-400/60 shadow-md'
+                : 'bg-slate-900/60 text-slate-400 border-slate-800 hover:text-white'
+            }">
+            <span class="w-2.5 h-2.5 rounded-full" style="background-color: ${p.color}"></span>
+            <span>${p.name}</span>
+            <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-950 text-slate-300">${p.cards.length}</span>
+          </button>
+        `;
+      }).join('');
+
+      if (!activeProj) return;
+
+      const todoCards = activeProj.cards.filter(c => c.status === 'todo');
+      const inprogCards = activeProj.cards.filter(c => c.status === 'inprogress');
+      const doneCards = activeProj.cards.filter(c => c.status === 'done');
+
+      document.getElementById('count-todo').textContent = todoCards.length;
+      document.getElementById('count-inprogress').textContent = inprogCards.length;
+      document.getElementById('count-done').textContent = doneCards.length;
+
+      // Project stats bar
+      const total = activeProj.cards.length;
+      const pct = total > 0 ? Math.round((doneCards.length / total) * 100) : 0;
+      let totalCheckItems = 0;
+      let doneCheckItems = 0;
+      activeProj.cards.forEach(c => {
+        (c.checklist || []).forEach(item => {
+          totalCheckItems++;
+          if (item.done) doneCheckItems++;
+        });
+      });
+
+      document.getElementById('kanban-project-stats').innerHTML = `
+        <div class="space-card rounded-xl p-4 flex items-center justify-between">
+          <div>
+            <p class="text-[11px] text-slate-400 uppercase">Aktif Proje</p>
+            <p class="text-base font-bold text-white mt-0.5">${activeProj.name}</p>
+          </div>
+          <span class="w-4 h-4 rounded-full" style="background-color: ${activeProj.color}; box-shadow: 0 0 12px ${activeProj.color}"></span>
+        </div>
+        <div class="space-card rounded-xl p-4 flex items-center justify-between">
+          <div>
+            <p class="text-[11px] text-slate-400 uppercase">Proje Tamamlanma</p>
+            <p class="text-xl font-extrabold text-emerald-400 font-space">%${pct}</p>
+          </div>
+          <span class="text-xs text-slate-400">${doneCards.length}/${total} Kart</span>
+        </div>
+        <div class="space-card rounded-xl p-4 flex items-center justify-between">
+          <div>
+            <p class="text-[11px] text-slate-400 uppercase">Süren Görevler (WIP)</p>
+            <p class="text-xl font-extrabold text-cyan-400 font-space">${inprogCards.length} Kart</p>
+          </div>
+          <span class="text-xs text-slate-400">Bekleyen: ${todoCards.length}</span>
+        </div>
+        <div class="space-card rounded-xl p-4 flex items-center justify-between">
+          <div>
+            <p class="text-[11px] text-slate-400 uppercase">Alt Liste (Checklist)</p>
+            <p class="text-xl font-extrabold text-violet-400 font-space">${doneCheckItems}/${totalCheckItems}</p>
+          </div>
+          <span class="text-xs text-slate-400">Alt görev</span>
+        </div>
+      `;
+
+      renderColumnCards('col-todo', todoCards);
+      renderColumnCards('col-inprogress', inprogCards);
+      renderColumnCards('col-done', doneCards);
+      lucide.createIcons();
+    }
+
+    function renderColumnCards(containerId, cards) {
+      const el = document.getElementById(containerId);
+      el.innerHTML = '';
+
+      cards.forEach(card => {
+        const checklist = card.checklist || [];
+        const doneChecks = checklist.filter(i => i.done).length;
+        const hasChecklist = checklist.length > 0;
+        const checkPct = hasChecklist ? Math.round((doneChecks / checklist.length) * 100) : 0;
+
+        const tagsHtml = (card.tags || []).map(t => `
+          <span class="px-2 py-0.5 rounded-md text-[10px] font-bold text-slate-950" style="background-color: ${t.color}">
+            ${t.name}
+          </span>
+        `).join('');
+
+        const checklistPreviewHtml = hasChecklist ? `
+          <div class="mt-3 pt-2.5 border-t border-slate-800/80 space-y-1.5">
+            <div class="flex items-center justify-between text-[11px]">
+              <span class="text-slate-300 font-semibold flex items-center gap-1">
+                <i data-lucide="check-square" class="w-3.5 h-3.5 text-cyan-400"></i>
+                Alt Liste: ${doneChecks}/${checklist.length}
+              </span>
+              <span class="text-slate-400">%${checkPct}</span>
+            </div>
+            <div class="w-full h-1.5 bg-slate-950 rounded-full overflow-hidden">
+              <div class="h-full rounded-full transition-all" style="width: ${checkPct}%; background-color: ${card.color || '#00F2FE'}"></div>
+            </div>
+            <div class="space-y-1 pt-1">
+              ${checklist.map((item, idx) => `
+                <label class="flex items-center gap-2 text-xs cursor-pointer hover:text-white ${item.done ? 'line-through text-slate-500' : 'text-slate-300'}">
+                  <input type="checkbox" ${item.done ? 'checked' : ''} onchange="toggleCardChecklistItem('${card.id}', ${idx})" class="rounded accent-cyan-400" />
+                  <span>${item.text}</span>
+                </label>
+              `).join('')}
+            </div>
+          </div>
+        ` : '';
+
+        const div = document.createElement('div');
+        div.className = 'kanban-card rounded-xl bg-slate-900/95 border border-slate-800 p-4 shadow-lg hover:border-indigo-500/50';
+        div.setAttribute('draggable', 'true');
+        div.ondragstart = (ev) => dragCardStart(ev, card.id);
+        div.ondragend = (ev) => ev.target.classList.remove('dragging');
+
+        div.innerHTML = `
+          <div class="h-1.5 w-16 rounded-full mb-2.5" style="background-color: ${card.color || '#8B5CF6'}; box-shadow: 0 0 8px ${card.color || '#8B5CF6'}"></div>
+          ${tagsHtml ? `<div class="flex flex-wrap gap-1.5 mb-2">${tagsHtml}</div>` : ''}
+          <div class="flex items-start justify-between gap-2">
+            <h4 class="text-sm font-bold text-white leading-snug">${card.title}</h4>
+            <button onclick="openKanbanCardModal('${card.status}', '${card.id}')" class="text-slate-400 hover:text-cyan-400 shrink-0 p-1" title="Kartı Düzenle">
+              <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+          ${card.desc ? `<p class="text-xs text-slate-400 mt-1.5 leading-relaxed">${card.desc}</p>` : ''}
+          ${checklistPreviewHtml}
+          <div class="flex items-center justify-between mt-3 pt-2 border-t border-slate-800/50 text-[10px] text-slate-400">
+            <span>${card.createdAt || ''}</span>
+            <div class="flex items-center gap-1">
+              ${card.status !== 'todo' ? `<button onclick="moveCardQuick('${card.id}', 'todo')" class="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-amber-500/20 text-amber-300">TODO</button>` : ''}
+              ${card.status !== 'inprogress' ? `<button onclick="moveCardQuick('${card.id}', 'inprogress')" class="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-cyan-500/20 text-cyan-300">SÜRÜYOR</button>` : ''}
+              ${card.status !== 'done' ? `<button onclick="moveCardQuick('${card.id}', 'done')" class="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-emerald-500/20 text-emerald-300">BİTTİ ✓</button>` : ''}
+            </div>
+          </div>
+        `;
+        el.appendChild(div);
+      });
+    }
+
+    // Drag and Drop Handlers
+    function dragCardStart(ev, cardId) {
+      ev.dataTransfer.setData('text/plain', cardId);
+      setTimeout(() => ev.target.classList.add('dragging'), 0);
+    }
+
+    function allowDrop(ev) {
+      ev.preventDefault();
+      ev.currentTarget.classList.add('drag-over');
+    }
+
+    function leaveDrop(ev) {
+      ev.currentTarget.classList.remove('drag-over');
+    }
+
+    function dropCard(ev, targetStatus) {
+      ev.preventDefault();
+      ev.currentTarget.classList.remove('drag-over');
+      const cardId = ev.dataTransfer.getData('text/plain');
+      moveCardQuick(cardId, targetStatus);
+    }
+
+    function moveCardQuick(cardId, targetStatus) {
+      const proj = getActiveProject();
+      if (!proj) return;
+      proj.cards = proj.cards.map(c => c.id === cardId ? { ...c, status: targetStatus } : c);
+      saveState();
+      renderAll();
+    }
+
+    function toggleCardChecklistItem(cardId, itemIdx) {
+      const proj = getActiveProject();
+      if (!proj) return;
+      const card = proj.cards.find(c => c.id === cardId);
+      if (!card || !card.checklist || !card.checklist[itemIdx]) return;
+      card.checklist[itemIdx].done = !card.checklist[itemIdx].done;
+      saveState();
+      renderAll();
+    }
+
+    // --- KANBAN CARD MODAL ---
+    let modalCardTags = [];
+    let modalCardChecklist = [];
+
+    function openKanbanCardModal(defaultStatus = 'todo', cardId = null) {
+      const proj = getActiveProject();
+      if (!proj) return;
+
+      if (cardId) {
+        const card = proj.cards.find(c => c.id === cardId);
+        if (!card) return;
+        document.getElementById('kanbanCardModalTitle').textContent = 'Kartı Düzenle';
+        document.getElementById('editCardId').value = card.id;
+        document.getElementById('cardTitleInput').value = card.title;
+        document.getElementById('cardDescInput').value = card.desc || '';
+        document.getElementById('cardStatusSelect').value = card.status;
+        document.getElementById('cardColorPicker').value = card.color || '#8b5cf6';
+        document.getElementById('cardHexInput').value = (card.color || '#8B5CF6').toUpperCase();
+        modalCardTags = JSON.parse(JSON.stringify(card.tags || []));
+        modalCardChecklist = JSON.parse(JSON.stringify(card.checklist || []));
+        document.getElementById('deleteCardBtn').classList.remove('hidden');
+      } else {
+        document.getElementById('kanbanCardModalTitle').textContent = 'Yeni Görev Kartı Ekle';
+        document.getElementById('editCardId').value = '';
+        document.getElementById('cardTitleInput').value = '';
+        document.getElementById('cardDescInput').value = '';
+        document.getElementById('cardStatusSelect').value = defaultStatus;
+        document.getElementById('cardColorPicker').value = '#8b5cf6';
+        document.getElementById('cardHexInput').value = '#8B5CF6';
+        modalCardTags = [];
+        modalCardChecklist = [];
+        document.getElementById('deleteCardBtn').classList.add('hidden');
+      }
+
+      renderModalTagsAndChecklist();
+      document.getElementById('kanbanCardModal').classList.remove('hidden');
+      document.getElementById('kanbanCardModal').classList.add('flex');
+      lucide.createIcons();
+    }
+
+    function closeKanbanCardModal() {
+      document.getElementById('kanbanCardModal').classList.add('hidden');
+      document.getElementById('kanbanCardModal').classList.remove('flex');
+    }
+
+    function renderModalTagsAndChecklist() {
+      const tagEl = document.getElementById('modalCardTags');
+      tagEl.innerHTML = modalCardTags.map((t, idx) => `
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold text-slate-950" style="background-color: ${t.color}">
+          ${t.name}
+          <button type="button" onclick="removeModalTag(${idx})" class="hover:opacity-75">×</button>
+        </span>
+      `).join('');
+
+      const checkEl = document.getElementById('modalChecklistContainer');
+      checkEl.innerHTML = modalCardChecklist.map((item, idx) => `
+        <div class="flex items-center justify-between px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-xs">
+          <label class="flex items-center gap-2 cursor-pointer text-slate-200">
+            <input type="checkbox" ${item.done ? 'checked' : ''} onchange="modalCardChecklist[${idx}].done = this.checked" class="accent-cyan-400" />
+            <span>${item.text}</span>
+          </label>
+          <button type="button" onclick="removeModalChecklist(${idx})" class="text-slate-500 hover:text-rose-400 font-bold">Sil</button>
+        </div>
+      `).join('');
+    }
+
+    function addTagToCardModal() {
+      const nameInput = document.getElementById('newTagInput');
+      const colorInput = document.getElementById('newTagColor');
+      const name = nameInput.value.trim();
+      if (!name) return;
+      modalCardTags.push({ name, color: colorInput.value.toUpperCase() });
+      nameInput.value = '';
+      renderModalTagsAndChecklist();
+    }
+
+    function removeModalTag(idx) {
+      modalCardTags.splice(idx, 1);
+      renderModalTagsAndChecklist();
+    }
+
+    function addChecklistItemModal() {
+      const inp = document.getElementById('newChecklistItemInput');
+      const text = inp.value.trim();
+      if (!text) return;
+      modalCardChecklist.push({ text, done: false });
+      inp.value = '';
+      renderModalTagsAndChecklist();
+    }
+
+    function removeModalChecklist(idx) {
+      modalCardChecklist.splice(idx, 1);
+      renderModalTagsAndChecklist();
+    }
+
+    function saveKanbanCard() {
+      const proj = getActiveProject();
+      if (!proj) return;
+      const title = document.getElementById('cardTitleInput').value.trim();
+      if (!title) return alert('Lütfen kart başlığı girin.');
+      const desc = document.getElementById('cardDescInput').value.trim();
+      const status = document.getElementById('cardStatusSelect').value;
+      const color = document.getElementById('cardHexInput').value.trim() || '#8B5CF6';
+      const editId = document.getElementById('editCardId').value;
+
+      if (editId) {
+        proj.cards = proj.cards.map(c => {
+          if (c.id === editId) {
+            return { ...c, title, desc, status, color, tags: modalCardTags, checklist: modalCardChecklist };
+          }
+          return c;
+        });
+      } else {
+        proj.cards.push({
+          id: 'card-' + Date.now(),
+          title,
+          desc,
+          status,
+          color,
+          tags: modalCardTags,
+          checklist: modalCardChecklist,
+          createdAt: formatDateKey(new Date())
+        });
+      }
+      saveState();
+      closeKanbanCardModal();
+      renderAll();
+    }
+
+    function deleteCardFromModal() {
+      const editId = document.getElementById('editCardId').value;
+      const proj = getActiveProject();
+      if (!proj || !editId) return;
+      proj.cards = proj.cards.filter(c => c.id !== editId);
+      saveState();
+      closeKanbanCardModal();
+      renderAll();
+    }
+
+    // =========================================================================
+    // TAB 3: MONTHLY / YEARLY REPORTS & RETROSPECTIVE HEATMAP
+    // =========================================================================
+    function initReportMonthPicker() {
+      const inp = document.getElementById('reportMonthInput');
+      if (!inp.value) {
+        const now = new Date();
+        inp.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+      }
+    }
+
+    function renderReports() {
+      initReportMonthPicker();
+      const monthVal = document.getElementById('reportMonthInput').value;
+      const [yearStr, monthStr] = monthVal.split('-');
+      const year = parseInt(yearStr, 10);
+      const month = parseInt(monthStr, 10) - 1; // 0-indexed
+
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const dayLabels = [];
+      const dailyRates = [];
+
+      for (let d = 1; d <= daysInMonth; d++) {
+        const dateObj = new Date(year, month, d);
+        const dKey = formatDateKey(dateObj);
+        const dayIdx = getDayIndexMon0(dateObj);
+        dayLabels.push(`${d}`);
+
+        const scheduledHabits = state.habits.filter(h => (h.scheduledDays || [0,1,2,3,4,5,6]).includes(dayIdx));
+        if (scheduledHabits.length === 0) {
+          dailyRates.push(0);
+        } else {
+          const done = scheduledHabits.filter(h => h.history && h.history[dKey]).length;
+          dailyRates.push(Math.round((done / scheduledHabits.length) * 100));
+        }
+      }
+
+      // 1. Monthly Trend Chart
+      const ctxMonth = document.getElementById('monthlyTrendChart').getContext('2d');
+      if (monthlyTrendChartInstance) monthlyTrendChartInstance.destroy();
+      const mGrad = ctxMonth.createLinearGradient(0, 0, 0, 250);
+      mGrad.addColorStop(0, 'rgba(99, 102, 241, 0.65)');
+      mGrad.addColorStop(1, 'rgba(0, 242, 254, 0.05)');
+
+      monthlyTrendChartInstance = new Chart(ctxMonth, {
+        type: 'line',
+        plugins: [chart3DShadowPlugin],
+        data: {
+          labels: dayLabels,
+          datasets: [{
+            label: 'Günlük Tamamlama (%)',
+            data: dailyRates,
+            borderColor: '#00F2FE',
+            backgroundColor: mGrad,
+            borderWidth: 2.5,
+            fill: true,
+            tension: 0.35,
+            pointRadius: 3.5,
+            pointBackgroundColor: '#8B5CF6'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { beginAtZero: true, max: 100, grid: { color: 'rgba(99,102,241,0.12)' }, ticks: { color: '#94a3b8', callback: v => `%${v}` } },
+            x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+          }
+        }
+      });
+
+      // 2. Category Radar Chart
+      const catScores = state.categories.map(cat => {
+        const catHabits = state.habits.filter(h => h.category === cat);
+        if (catHabits.length === 0) return 0;
+        let schedTotal = 0;
+        let doneTotal = 0;
+        for (let d = 1; d <= daysInMonth; d++) {
+          const dateObj = new Date(year, month, d);
+          const dKey = formatDateKey(dateObj);
+          const dayIdx = getDayIndexMon0(dateObj);
+          catHabits.forEach(h => {
+            if ((h.scheduledDays || [0,1,2,3,4,5,6]).includes(dayIdx)) {
+              schedTotal++;
+              if (h.history && h.history[dKey]) doneTotal++;
+            }
+          });
+        }
+        return schedTotal > 0 ? Math.round((doneTotal / schedTotal) * 100) : 0;
+      });
+
+      const ctxRadar = document.getElementById('categoryRadarChart').getContext('2d');
+      if (categoryRadarChartInstance) categoryRadarChartInstance.destroy();
+      categoryRadarChartInstance = new Chart(ctxRadar, {
+        type: 'radar',
+        data: {
+          labels: state.categories,
+          datasets: [{
+            label: 'Kategori Başarısı (%)',
+            data: catScores,
+            backgroundColor: 'rgba(236, 72, 153, 0.25)',
+            borderColor: '#EC4899',
+            pointBackgroundColor: '#00F2FE',
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            r: {
+              beginAtZero: true,
+              max: 100,
+              angleLines: { color: 'rgba(148, 163, 184, 0.2)' },
+              grid: { color: 'rgba(148, 163, 184, 0.2)' },
+              pointLabels: { color: '#e2e8f0', font: { size: 11 } },
+              ticks: { display: false }
+            }
+          }
+        }
+      });
+
+      // 3. Kanban Project Report Chart
+      const ctxKanban = document.getElementById('kanbanReportChart').getContext('2d');
+      if (kanbanReportChartInstance) kanbanReportChartInstance.destroy();
+      const projNames = state.projects.map(p => p.name);
+      const todoCounts = state.projects.map(p => p.cards.filter(c => c.status === 'todo').length);
+      const inprogCounts = state.projects.map(p => p.cards.filter(c => c.status === 'inprogress').length);
+      const doneCounts = state.projects.map(p => p.cards.filter(c => c.status === 'done').length);
+
+      kanbanReportChartInstance = new Chart(ctxKanban, {
+        type: 'bar',
+        data: {
+          labels: projNames,
+          datasets: [
+            { label: 'TODO', data: todoCounts, backgroundColor: '#F59E0B', borderRadius: 6 },
+            { label: 'IN PROGRESS', data: inprogCounts, backgroundColor: '#00F2FE', borderRadius: 6 },
+            { label: 'DONE', data: doneCounts, backgroundColor: '#10B981', borderRadius: 6 }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { labels: { color: '#cbd5e1' } }
+          },
+          scales: {
+            x: { stacked: true, grid: { display: false }, ticks: { color: '#cbd5e1' } },
+            y: { stacked: true, beginAtZero: true, grid: { color: 'rgba(99,102,241,0.12)' }, ticks: { color: '#94a3b8', stepSize: 1 } }
+          }
+        }
+      });
+
+      // 4. Monthly Habit Scorecard
+      const scorecardEl = document.getElementById('monthly-habit-scorecard');
+      scorecardEl.innerHTML = '';
+      state.habits.forEach(h => {
+        let schedDays = 0;
+        let doneDays = 0;
+        for (let d = 1; d <= daysInMonth; d++) {
+          const dateObj = new Date(year, month, d);
+          const dKey = formatDateKey(dateObj);
+          const dayIdx = getDayIndexMon0(dateObj);
+          if ((h.scheduledDays || [0,1,2,3,4,5,6]).includes(dayIdx)) {
+            schedDays++;
+            if (h.history && h.history[dKey]) doneDays++;
+          }
+        }
+        const pct = schedDays > 0 ? Math.round((doneDays / schedDays) * 100) : 0;
+        const row = document.createElement('div');
+        row.className = 'p-3 rounded-xl bg-slate-900/80 border border-slate-800';
+        row.innerHTML = `
+          <div class="flex items-center justify-between text-xs mb-1.5">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full" style="background-color: ${h.color}"></span>
+              <span class="font-bold text-white">${h.name}</span>
+              <span class="text-[10px] text-slate-400">(${h.category})</span>
+            </div>
+            <span class="font-bold text-cyan-300">${doneDays}/${schedDays} Gün (%${pct})</span>
+          </div>
+          <div class="w-full h-2 bg-slate-950 rounded-full overflow-hidden">
+            <div class="h-full rounded-full" style="width: ${pct}%; background-color: ${h.color}"></div>
+          </div>
+        `;
+        scorecardEl.appendChild(row);
+      });
+
+      // 5. 364-Day Yearly Space Heatmap
+      const heatEl = document.getElementById('yearly-heatmap');
+      heatEl.innerHTML = '';
+      const today = new Date();
+      for (let i = 363; i >= 0; i--) {
+        const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() - i);
+        const dKey = formatDateKey(d);
+        const dayIdx = getDayIndexMon0(d);
+        const schedHabits = state.habits.filter(h => (h.scheduledDays || [0,1,2,3,4,5,6]).includes(dayIdx));
+        const doneCount = schedHabits.filter(h => h.history && h.history[dKey]).length;
+        const ratio = schedHabits.length > 0 ? doneCount / schedHabits.length : 0;
+
+        let bgClass = 'bg-slate-900 border border-slate-800/80';
+        if (ratio > 0 && ratio < 0.4) bgClass = 'bg-indigo-900 border border-indigo-700';
+        else if (ratio >= 0.4 && ratio < 0.8) bgClass = 'bg-indigo-600 border border-indigo-400';
+        else if (ratio >= 0.8) bgClass = 'bg-cyan-400 border border-white shadow-sm shadow-cyan-400/50';
+
+        const cell = document.createElement('div');
+        cell.className = `heat-cell ${bgClass}`;
+        cell.title = `${dKey}: ${doneCount}/${schedHabits.length} tamamlandı (%${Math.round(ratio*100)})`;
+        heatEl.appendChild(cell);
+      }
+    }
+
+    // --- EXPORT & IMPORT ALL DATA ---
+    function exportAllData() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state, null, 2));
+      const a = document.createElement('a');
+      a.setAttribute('href', dataStr);
+      a.setAttribute('download', `cosmos_yedek_${formatDateKey(new Date())}.json`);
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }
+
+    function importAllData(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const parsed = JSON.parse(e.target.result);
+          if (parsed && Array.isArray(parsed.habits)) {
+            state = parsed;
+            saveState();
+            renderAll();
+            alert('Cosmos yedeğiniz başarıyla yüklendi!');
+          } else if (Array.isArray(parsed)) {
+            // Backward compatibility with v1 backup files
+            localStorage.setItem('desktop_habits_v1', JSON.stringify(parsed));
+            localStorage.removeItem('cosmos_tracker_v2');
+            state = loadOrMigrateState();
+            saveState();
+            renderAll();
+            alert('v1 yedeğiniz başarıyla v2 uzay üssüne aktarıldı!');
+          }
+        } catch (err) {
+          alert('Yedek dosyası okunamadı!');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function renderAll() {
+      renderCategoryDropdowns();
+      renderHabitsView();
+      renderKanbanView();
+      if (!document.getElementById('view-reports').classList.contains('hidden')) {
+        renderReports();
+      }
+      lucide.createIcons();
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      initReportMonthPicker();
+      renderAll();
+    });
+  </script>
+</body>
+</html>
